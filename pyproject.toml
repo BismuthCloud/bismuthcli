@@ -1,0 +1,37 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "bismuthsdk"
+dynamic = ["version"]
+license = ""
+dependencies = [
+    "flask",
+    "flask-restx",
+    "requests",
+]
+readme = "README.md"
+
+[tool.hatch.version]
+path ="src/bismuth/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src/bismuth",
+]
+exclude = [
+  "/.github",
+  "/docs",
+]
+
+[tool.hatch.metadata]
+packages = [
+    {include = "bismuth", from = "src"},
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/bismuth"]
+
+[tool.hatch.publish.index]
+disable = true
