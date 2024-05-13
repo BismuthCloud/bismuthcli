@@ -14,7 +14,7 @@ dependencies = [
 readme = "README.md"
 
 [tool.hatch.version]
-path ="src/bismuth/__init__.py"
+path = "src/bismuth/__init__.py"
 
 [tool.hatch.build.targets.sdist]
 include = [

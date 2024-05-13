@@ -1,6 +1,6 @@
-from typing import Callable
-from flask import Flask, request
-from flask_restx import Api, Resource
+from typing import Callable, Optional, Any
+from flask import request
+from flask_restx import Resource
 from .api_code_block import APICodeBlock
 from .data_storage_code_block import DataStorageCodeBlock
 from .auth_code_block import AuthCodeBlock
@@ -13,7 +13,7 @@ class APICodeBlockWithStorage(APICodeBlock):
         self.data_stores = {}  # Dictionary to hold DataStorageBlock instances
 
     def _auth_handler_for_storage(
-        self, method, func: FunctionCodeBlock | Callable, require_auth, **kwargs
+        self, method, func: FunctionCodeBlock | Callable[..., Any], require_auth, **kwargs
     ):
         cb = func.exec if isinstance(func, FunctionCodeBlock) else func
 
@@ -21,9 +21,9 @@ class APICodeBlockWithStorage(APICodeBlock):
             method.upper() in map(lambda x: x.upper(), require_auth)
             and self.auth_code_block is not None
         ):
-            return self.auth_code_block.token_required(func.exec)(**kwargs)
+            return self.auth_code_block.token_required(cb)(**kwargs)
         else:
-            return func.exec(**kwargs)
+            return cb(**kwargs)
 
     def add_route_with_storage(
         self,
@@ -31,7 +31,7 @@ class APICodeBlockWithStorage(APICodeBlock):
         methods,
         data_storage_block: DataStorageCodeBlock,
         require_auth=["POST", "DELETE", "PUT"],
-        auth_code_block: AuthCodeBlock = None,
+        auth_code_block: Optional[AuthCodeBlock] = None,
     ):
         self.data_stores[route] = data_storage_block
         methods = methods if isinstance(methods, list) else [methods]

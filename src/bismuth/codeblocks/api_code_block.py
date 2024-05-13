@@ -1,3 +1,4 @@
+from typing import Optional, Any, Callable
 from flask import Flask, request
 from flask_restx import Api, Resource
 from .auth_code_block import AuthCodeBlock
@@ -12,8 +13,8 @@ class APICodeBlock(BaseCodeBlock):
         title="API",
         version="1.0",
         description="A simple API",
-        config: ConfigurationCodeBlock = None,
-        auth_code_block: AuthCodeBlock = None,
+        config: Optional[ConfigurationCodeBlock] = None,
+        auth_code_block: Optional[AuthCodeBlock] = None,
         *args,
         **kwargs
     ):
@@ -36,11 +37,11 @@ class APICodeBlock(BaseCodeBlock):
     def _auth_handler(
         self,
         method: str,
-        handlers: dict[str, FunctionCodeBlock],
+        handlers: dict[str, FunctionCodeBlock | Callable[..., Any]],
         require_auth: list[str],
-        **kwargs
-    ):
-        cb = handlers[method].exec if isinstance(handlers[method], FunctionCodeBlock) else handlers[method]
+        **kwargs: Any
+    ) -> Any:
+        cb: Callable[..., Any] = handlers[method].exec if isinstance(handlers[method], FunctionCodeBlock) else handlers[method]
 
         if (
             method.upper() in map(lambda x: x.upper(), require_auth)
@@ -53,7 +54,7 @@ class APICodeBlock(BaseCodeBlock):
     def add_route(
         self,
         route: str,
-        handlers: dict[str, FunctionCodeBlock],
+        handlers: dict[str, FunctionCodeBlock | Callable[..., Any]],
         require_auth: list[str] = ["POST", "DELETE", "PUT"],
     ):
         handlers = {k.upper(): v for k, v in handlers.items()}

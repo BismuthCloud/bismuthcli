@@ -4,11 +4,11 @@ from typing import Callable, Any
 
 class FunctionCodeBlock(BaseCodeBlock):
     def __init__(
-        self, func: Callable[[Any], Any], network_enabled: bool = False, *args, **kwargs
+        self, func: Callable[..., Any], network_enabled: bool = False, *args, **kwargs
     ):
         super().__init__(*args, **kwargs)
         self.network_enabled = network_enabled
         self.func = func
 
-    def exec(self, **kwargs):
+    def exec(self, **kwargs: Any) -> Any:
         return self.func(**kwargs)
