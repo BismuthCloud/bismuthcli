@@ -17,7 +17,7 @@ class MockResponse:
         self.status_code = status_code
 
     def __repr__(self):
-        return f"<{__class__.__name__} status_code={self.status_code} json={repr(self.json)}>"
+        return f"<{__class__.__name__} status_code={self.status_code}>"
 
     def json(self):
         if self.data is None:
@@ -29,7 +29,7 @@ class MockResponse:
         return 200 <= self.status_code < 300
 
 def mock_get(storage, url, **kwargs):
-    if kwargs.get('headers', {}).get('Authorization', '') != TEST_AUTH:
+    if kwargs.get('headers', {}).get('Authorization', '') != 'Bearer ' + TEST_AUTH:
         return MockResponse(None, 401)
     p = urlparse(url)
     if p.path == "/blob/v1/":
