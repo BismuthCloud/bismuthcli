@@ -16,7 +16,7 @@ class PersistentDataStorageCodeBlock(DataStorageCodeBlock):
     def __init__(self, api_url="http://169.254.169.254:9000/blob/v1/"):
         if 'BISMUTH_AUTH' not in os.environ:
             raise Exception("Missing BISMUTH_AUTH token in environment.")
-        self.auth = {"Authorization": os.environ['BISMUTH_AUTH']}
+        self.auth = {"Authorization": "Bearer " + os.environ['BISMUTH_AUTH']}
         self.api_url = api_url
 
     def _headers(self):
