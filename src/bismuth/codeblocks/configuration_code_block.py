@@ -10,12 +10,16 @@ from .base_code_block import BaseCodeBlock
 
 class ConfigurationCodeBlock(BaseCodeBlock):
     """
-    The ConfigurationCodeBlock provides access to configuration parameters set during creation.
-    Any configured key is available through the get() method, returning the string value or raising an exception if no
-    such configuration key exists.
+    The ConfigurationCodeBlock provides access to runtime configuration set outside the code.
+    Instances of this class expose configuration to the application via the get method,
+    which must be passed a string literal, NOT a variable.
+    All instances of this class must be called `config`.
     """
 
     def __init__(self, api_url="http://169.254.169.254:9000/secrets/v1/"):
+        """
+        Initialize the configuration store.
+        """
         if 'BISMUTH_AUTH' not in os.environ:
             print("Missing BISMUTH_AUTH token in environment. Configuration will not be available.")
             return
@@ -33,6 +37,9 @@ class ConfigurationCodeBlock(BaseCodeBlock):
         return hdrs
 
     def get(self, key) -> Optional[str]:
+        """
+        Get a config value. Raises an exception if the key does not exist in the managed configuration store.
+        """
         if 'BISMUTH_AUTH' not in os.environ:
             raise Exception("Missing BISMUTH_AUTH token in environment.")
         resp = requests.get(urljoin(self.api_url, key), headers=self._headers())

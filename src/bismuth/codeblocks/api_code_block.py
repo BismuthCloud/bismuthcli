@@ -8,6 +8,18 @@ from .function_code_block import FunctionCodeBlock
 
 
 class APICodeBlock(BaseCodeBlock):
+    """
+    Extends BaseCodeBlock, this class includes methods and attributes for API code blocks.
+    """
+    # The Flask application instance.
+    app: Flask
+    # The Flask-RESTX API instance.
+    api: Api
+    # The ConfigurationCodeBlock instance for this API.
+    config: ConfigurationCodeBlock
+    # The AuthCodeBlock instance for this API.
+    auth_code_block: Optional[AuthCodeBlock]
+
     def __init__(
         self,
         title="API",
@@ -18,6 +30,10 @@ class APICodeBlock(BaseCodeBlock):
         *args,
         **kwargs
     ):
+        """
+        Initializes the APICodeBlock class with optional title, version, description, configuration code block, and authentication code block.
+        `add_route` should be called in overrides of this to register routes for the API.
+        """
         super().__init__(*args, **kwargs)
         self.app = Flask(__name__)
         @self.app.route("/healthz")
@@ -57,6 +73,9 @@ class APICodeBlock(BaseCodeBlock):
         handlers: dict[str, FunctionCodeBlock | Callable[..., Any]],
         require_auth: list[str] = ["POST", "DELETE", "PUT"],
     ):
+        """
+        Adds a route to the API.
+        """
         handlers = {k.upper(): v for k, v in handlers.items()}
         auth_handler = self._auth_handler
 
@@ -96,4 +115,8 @@ class APICodeBlock(BaseCodeBlock):
         return self.app(*args)
 
     def run(self, host="0.0.0.0", port=5000, debug=False):
+        """
+        Starts the API on the given port and host.
+        """
+
         self.app.run(host=host, port=port, debug=debug)

@@ -1,7 +1,14 @@
+from typing import Dict, Any
 from .base_code_block import BaseCodeBlock
 
 
 class DataStorageCodeBlock(BaseCodeBlock):
+    """
+    Extends BaseCodeBlock. This class manages data storage operations.
+    """
+    # A dictionary used for storing data items.
+    store: Dict[str, Any]
+
     def __init__(self):
         """Initialize the datastore with an empty dictionary."""
         self.store = {}

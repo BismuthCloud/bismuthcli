@@ -1,4 +1,4 @@
-from typing import Callable, Optional, Any
+from typing import Callable, Optional, Any, Dict, List
 from flask import request
 from flask_restx import Resource
 from .api_code_block import APICodeBlock
@@ -8,9 +8,20 @@ from .function_code_block import FunctionCodeBlock
 
 
 class APICodeBlockWithStorage(APICodeBlock):
+    """
+    A class that extends APICodeBlock to include functionalities for data storage.
+    It manages API routes and associates them with specific data storage operations.
+    """
+    # A dictionary that holds instances of DataStorageCodeBlock, used for managing data storage.
+    data_stores: Dict[str, DataStorageCodeBlock]
+
     def __init__(self, *args, **kwargs):
+        """
+        Initializes the APICodeBlockWithStorage instance.
+        Inherits initialization from APICodeBlock and initializes a dictionary to hold DataStorageBlock instances.
+        """
         super().__init__(*args, **kwargs)
-        self.data_stores = {}  # Dictionary to hold DataStorageBlock instances
+        self.data_stores = {}
 
     def _auth_handler_for_storage(
         self, method, func: FunctionCodeBlock | Callable[..., Any], require_auth, **kwargs
@@ -27,12 +38,15 @@ class APICodeBlockWithStorage(APICodeBlock):
 
     def add_route_with_storage(
         self,
-        route,
-        methods,
+        route: str,
+        methods: List[str],
         data_storage_block: DataStorageCodeBlock,
-        require_auth=["POST", "DELETE", "PUT"],
+        require_auth: List[str] = ["POST", "DELETE", "PUT"],
         auth_code_block: Optional[AuthCodeBlock] = None,
     ):
+        """
+        Adds a route to the API with associated data storage functionality.
+        """
         self.data_stores[route] = data_storage_block
         methods = methods if isinstance(methods, list) else [methods]
         methods = [method.upper() for method in methods]

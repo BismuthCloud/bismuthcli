@@ -1,18 +1,39 @@
+from abc import ABC, abstractmethod
+from typing import Optional
 from functools import wraps
 from flask import request, jsonify
 from .base_code_block import BaseCodeBlock
 
 
-class AuthCodeBlock(BaseCodeBlock):
-    def __init__(self, auth_service=None, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+class AuthService(ABC):
+    @abstractmethod
+    def validate_token(self, token) -> bool:
+        """
+        Validate the given token is authenticated
+        """
 
+
+class AuthCodeBlock(BaseCodeBlock):
+    """
+    Extends BaseCodeBlock. This class provides authentication functionalities for API endpoints.
+    """
+    # Holds the instance of the authentication service used for token validation.
+    auth_service: AuthService
+
+    def __init__(self, auth_service: Optional[AuthService] = None):
+        """
+        Initializes the AuthCodeBlock instance with a given authentication service.
+        """
         if auth_service is None:
             self.auth_service = MockAuthService()
         else:
             self.auth_service = auth_service
 
     def token_required(self, f):
+        """
+        A decorator method to enforce token validation on API endpoints.
+        It checks for a valid authentication token in the request header.
+        """
         @wraps(f)
         def decorated(*args, **kwargs):
             token = None
