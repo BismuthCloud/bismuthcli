@@ -13,7 +13,6 @@ class APICodeBlock(BaseCodeBlock):
     """
     # The Flask application instance.
     app: Flask
-    # The Flask-RESTX API instance.
     api: Api
     # The ConfigurationCodeBlock instance for this API.
     config: ConfigurationCodeBlock
