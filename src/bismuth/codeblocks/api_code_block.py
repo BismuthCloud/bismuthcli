@@ -1,5 +1,5 @@
 from typing import Optional, Any, Callable
-from flask import Flask, request
+from flask import Flask, Request, request
 from flask_restx import Api, Resource
 from .auth_code_block import AuthCodeBlock
 from .base_code_block import BaseCodeBlock
@@ -11,6 +11,7 @@ class APICodeBlock(BaseCodeBlock):
     """
     Extends BaseCodeBlock, this class includes methods and attributes for API code blocks.
     """
+
     # The Flask application instance.
     app: Flask
     api: Api
@@ -35,6 +36,7 @@ class APICodeBlock(BaseCodeBlock):
         """
         super().__init__(*args, **kwargs)
         self.app = Flask(__name__)
+
         @self.app.route("/healthz")
         def healthz():
             return "ok"
@@ -44,7 +46,14 @@ class APICodeBlock(BaseCodeBlock):
 
         self.config = config
         # Hack: set prefix so that this doesn't register over the root route
-        self.api = Api(self.app, version=version, title=title, description=description, doc="/doc", prefix="/tmp")
+        self.api = Api(
+            self.app,
+            version=version,
+            title=title,
+            description=description,
+            doc="/doc",
+            prefix="/tmp",
+        )
         # And clear it
         self.api.prefix = ""
         self.auth_code_block = auth_code_block
@@ -52,19 +61,24 @@ class APICodeBlock(BaseCodeBlock):
     def _auth_handler(
         self,
         method: str,
+        request: Request,
         handlers: dict[str, FunctionCodeBlock | Callable[..., Any]],
         require_auth: list[str],
         **kwargs: Any
     ) -> Any:
-        cb: Callable[..., Any] = handlers[method].exec if isinstance(handlers[method], FunctionCodeBlock) else handlers[method]
+        cb: Callable[..., Any] = (
+            handlers[method].exec
+            if isinstance(handlers[method], FunctionCodeBlock)
+            else handlers[method]
+        )
 
         if (
             method.upper() in map(lambda x: x.upper(), require_auth)
             and self.auth_code_block is not None
         ):
-            return self.auth_code_block.token_required(cb)(**kwargs)
+            return self.auth_code_block.token_required(cb)(request, **kwargs)
         else:
-            return cb(**kwargs)
+            return cb(request, **kwargs)
 
     def add_route(
         self,
@@ -82,21 +96,27 @@ class APICodeBlock(BaseCodeBlock):
             def get(self):
                 kwargs = request.args.to_dict()
                 if "GET" in handlers:
-                    return auth_handler("GET", handlers, require_auth, **kwargs)
+                    return auth_handler(
+                        "GET", request, handlers, require_auth, **kwargs
+                    )
                 else:
                     self.api.abort(404)
 
             def post(self):
                 kwargs = request.json or {}
                 if "POST" in handlers:
-                    return auth_handler("POST", handlers, require_auth, **kwargs)
+                    return auth_handler(
+                        "POST", request, handlers, require_auth, **kwargs
+                    )
                 else:
                     self.api.abort(404)
 
             def put(self):
                 kwargs = request.json or {}
                 if "PUT" in handlers:
-                    return auth_handler("PUT", handlers, require_auth, **kwargs)
+                    return auth_handler(
+                        "PUT", request, handlers, require_auth, **kwargs
+                    )
                 else:
                     self.api.abort(404)
 
@@ -104,7 +124,9 @@ class APICodeBlock(BaseCodeBlock):
                 kwargs = request.args.to_dict()
 
                 if "DELETE" in handlers:
-                    return auth_handler("DELETE", handlers, require_auth, **kwargs)
+                    return auth_handler(
+                        "DELETE", request, handlers, require_auth, **kwargs
+                    )
                 else:
                     self.api.abort(404)
 
