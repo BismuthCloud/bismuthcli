@@ -1,4 +1,4 @@
-__version__ = "0.1.14"
+__version__ = "0.1.15"
 
 from .codeblocks.api_code_block import *
 from .codeblocks.api_code_block_with_storage import *
