@@ -6,6 +6,7 @@ class FunctionCodeBlock(BaseCodeBlock):
     """
     Extends BaseCodeBlock. Run a python function with some requirements.
     """
+
     # Flag for if this block makes any network requests.
     network_enabled: bool
     # Function that will be run by `execute()`.
@@ -21,8 +22,8 @@ class FunctionCodeBlock(BaseCodeBlock):
         self.network_enabled = network_enabled
         self.func = func
 
-    def exec(self, **kwargs: Any) -> Any:
+    def exec(self, *args, **kwargs: Any) -> Any:
         """
         Run a subset of arbitrary python functions as defined by Bismuth provided args and kwargs.
         """
-        return self.func(**kwargs)
+        return self.func(*args, **kwargs)
