@@ -1,7 +1,6 @@
 import os
 import pytest
 from flask import Request
-from unittest.mock import MagicMock
 from .api_code_block import APICodeBlock
 from .function_code_block import FunctionCodeBlock
 
@@ -30,19 +29,19 @@ def test_request_passed_through_auth_callback(api_block):
 
 
 def test_add_route(api_block):
-    mock_block = MagicMock(spec=FunctionCodeBlock)
-    mock_block.exec.return_value = {"message": "mock response"}
-    api_block.add_route("/mock", {"get": mock_block})
+    def func(request, **kwargs):
+        return {"message": "mock response"}
+
+    api_block.add_route("/mock", {"get": FunctionCodeBlock(func)})
 
     with api_block.app.test_client() as client:
         response = client.get("/mock")
         assert response.status_code == 200
         assert response.json == {"message": "mock response"}
-        mock_block.exec.assert_called_once()
 
 
 def test_add_route_bare_func(api_block):
-    def func(*args):
+    def func(request, **kwargs):
         return {"message": "mock response"}
 
     api_block.add_route("/mock", {"get": func})
@@ -54,12 +53,12 @@ def test_add_route_bare_func(api_block):
 
 
 def test_add_root_route(api_block):
-    mock_block = MagicMock(spec=FunctionCodeBlock)
-    mock_block.exec.return_value = {"message": "mock response"}
-    api_block.add_route("/", {"get": mock_block})
+    def func(request, **kwargs):
+        return {"message": "mock response"}
+
+    api_block.add_route("/", {"get": FunctionCodeBlock(func)})
 
     with api_block.app.test_client() as client:
         response = client.get("/")
         assert response.status_code == 200
         assert response.json == {"message": "mock response"}
-        mock_block.exec.assert_called_once()

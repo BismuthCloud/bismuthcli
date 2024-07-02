@@ -83,6 +83,7 @@ class APICodeBlock(BaseCodeBlock):
     ):
         """
         Adds a route to the API.
+        Handlers receive the request from flask plus query parameters as kwargs.
         """
         handlers = {k.upper(): v for k, v in handlers.items()}
         auth_handler = self._auth_handler
