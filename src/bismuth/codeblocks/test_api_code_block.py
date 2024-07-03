@@ -62,3 +62,27 @@ def test_add_root_route(api_block):
         response = client.get("/")
         assert response.status_code == 200
         assert response.json == {"message": "mock response"}
+
+
+def test_json_kwargs(api_block):
+    def func(request, **kwargs):
+        return {"json": kwargs}
+
+    api_block.add_route("/", {"post": FunctionCodeBlock(func)})
+
+    with api_block.app.test_client() as client:
+        response = client.post("/", json={"key": "value"})
+        assert response.status_code == 200
+        assert response.json == {"json": {"key": "value"}}
+
+
+def test_non_json_request(api_block):
+    def func(request, **kwargs):
+        return {"data": request.get_data(as_text=True)}
+
+    api_block.add_route("/", {"post": FunctionCodeBlock(func)})
+
+    with api_block.app.test_client() as client:
+        response = client.post("/", data={"form": "value"})
+        assert response.status_code == 200
+        assert response.json == {"data": "form=value"}

@@ -99,7 +99,7 @@ class APICodeBlock(BaseCodeBlock):
                     self.api.abort(404)
 
             def post(self):
-                kwargs = request.json or {}
+                kwargs = request.get_json(silent=True) or {}
                 if "POST" in handlers:
                     return auth_handler(
                         "POST", request, handlers, require_auth, **kwargs
@@ -108,7 +108,7 @@ class APICodeBlock(BaseCodeBlock):
                     self.api.abort(404)
 
             def put(self):
-                kwargs = request.json or {}
+                kwargs = request.get_json(silent=True) or {}
                 if "PUT" in handlers:
                     return auth_handler(
                         "PUT", request, handlers, require_auth, **kwargs
