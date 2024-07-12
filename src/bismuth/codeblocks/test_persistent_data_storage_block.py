@@ -1,11 +1,10 @@
 import json
-import os
 import pytest
 from typing import Optional, Dict
 from unittest import mock
 from urllib.parse import urlparse
 
-from .persistent_data_storage_code_block import PersistentDataStorageCodeBlock
+from .persistent_data_storage_code_block import HostedPersistentDataStorageCodeBlock, LocalPersistentDataStorageCodeBlock
 
 
 TEST_AUTH = 'testauth123'
@@ -78,7 +77,6 @@ def mock_delete(storage, url, **kwargs):
 
 @pytest.fixture(autouse=True)
 def mock_svcprovider():
-    os.environ['BISMUTH_AUTH'] = TEST_AUTH
     storage: Dict[str, bytes] = {}
     with mock.patch.multiple('requests',
                              get=lambda url, **kwargs: mock_get(storage, url, **kwargs),
@@ -88,41 +86,42 @@ def mock_svcprovider():
         yield
 
 
-def test_create_and_retrieve_item():
-    storage = PersistentDataStorageCodeBlock()
+@pytest.fixture(params=[HostedPersistentDataStorageCodeBlock(TEST_AUTH), LocalPersistentDataStorageCodeBlock()])
+def storage(request):
+    if isinstance(request.param, LocalPersistentDataStorageCodeBlock):
+        request.param.clear()
+    return request.param
+
+
+def test_hosted_create_and_retrieve_item(storage):
     storage.create("test_key", "test_value")
     assert storage.retrieve("test_key") == "test_value"
 
 
-def test_update_item():
-    storage = PersistentDataStorageCodeBlock()
+def test_hosted_update_item(storage):
     storage.create("test_key", "test_value")
     storage.update("test_key", "new_test_value")
     assert storage.retrieve("test_key") == "new_test_value"
 
 
-def test_delete_item():
-    storage = PersistentDataStorageCodeBlock()
+def test_hosted_delete_item(storage):
     storage.create("test_key", "test_value")
     storage.delete("test_key")
     assert storage.retrieve("test_key") is None
 
 
-def test_create_existing_key():
-    storage = PersistentDataStorageCodeBlock()
+def test_hosted_create_existing_key(storage):
     storage.create("test_key", "test_value")
     with pytest.raises(ValueError):
         storage.create("test_key", "another_value")
 
 
-def test_update_nonexistent_key():
-    storage = PersistentDataStorageCodeBlock()
+def test_hosted_update_nonexistent_key(storage):
     with pytest.raises(ValueError):
         storage.update("nonexistent_key", "value")
 
 
-def test_list_all_items():
-    storage = PersistentDataStorageCodeBlock()
+def test_hosted_list_all_items(storage):
     storage.create("key1", "value1")
     storage.create("key2", "value2")
     all_items = storage.list_all()
