@@ -10,6 +10,7 @@ dependencies = [
     "flask",
     "flask-restx",
     "requests",
+    "psycopg[binary]",
 ]
 readme = "README.md"
 
