@@ -27,23 +27,26 @@ class SQLCodeBlock(BaseCodeBlock):
         Run the given SQL, returning no results.
         """
         with self.conn.cursor() as cur:
-            cur.execute(sql, params)
+            with self.conn.transaction():
+                cur.execute(sql, params)
 
     def fetchone(self, sql: str, params: Sequence[Any]|Mapping[str, Any] = {}) -> Optional[tuple[Any, ...]]:
         """
         Run the given SQL, returning a single row.
         """
         with self.conn.cursor() as cur:
-            cur.execute(sql, params)
-            return cur.fetchone()
+            with self.conn.transaction():
+                cur.execute(sql, params)
+                return cur.fetchone()
 
     def fetchall(self, sql: str, params: Sequence[Any]|Mapping[str, Any] = {}) -> list[tuple[Any, ...]]:
         """
         Run the given SQL, returning all rows.
         """
         with self.conn.cursor() as cur:
-            cur.execute(sql, params)
-            return cur.fetchall()
+            with self.conn.transaction():
+                cur.execute(sql, params)
+                return cur.fetchall()
 
     def getconn(self) -> psycopg.Connection:
         """
