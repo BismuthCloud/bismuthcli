@@ -27,19 +27,30 @@ class PersistentDataStorageCodeBlock(DataStorageCodeBlock):
         else:
             self._impl = LocalPersistentDataStorageCodeBlock()
 
-    def create(self, key, value) -> None:
+    def _encode(self, value) -> bytes:
+        return value if isinstance(value, bytes) else json.dumps(value).encode('utf-8')
+
+    def _decode(self, value) -> Optional[Any]:
+        if value is None:
+            return None
+        try:
+            return json.loads(value)
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            return value
+
+    def create(self, key: str, value: Any) -> None:
         """Create a new item in the datastore."""
-        return self._impl.create(key, value)
+        return self._impl.create(key, self._encode(value))
 
-    def retrieve(self, key) -> Optional[Any]:
+    def retrieve(self, key: str) -> Optional[Any]:
         """Retrieve an item from the datastore."""
-        return self._impl.retrieve(key)
+        return self._decode(self._impl.retrieve(key))
 
-    def update(self, key, value) -> None:
+    def update(self, key: str, value: Any) -> None:
         """Update an existing item in the datastore."""
-        return self._impl.update(key, value)
+        return self._impl.update(key, self._encode(value))
 
-    def delete(self, key) -> None:
+    def delete(self, key: str) -> None:
         """Delete an item from the datastore."""
         return self._impl.delete(key)
 
@@ -68,29 +79,29 @@ class HostedPersistentDataStorageCodeBlock(DataStorageCodeBlock):
             pass
         return hdrs
 
-    def create(self, key, value) -> None:
-        resp = requests.post(urljoin(self._api_url, key), data=json.dumps(value), headers=self._headers())
+    def create(self, key: str, value: bytes) -> None:
+        resp = requests.post(urljoin(self._api_url, key), data=value, headers=self._headers())
         if resp.status_code == HTTPStatus.CONFLICT:
             raise ValueError("Key already exists.")
         elif not resp.ok:
             raise Exception(f"Server error {resp}")
 
-    def retrieve(self, key) -> Optional[Any]:
+    def retrieve(self, key: str) -> Optional[bytes]:
         resp = requests.get(urljoin(self._api_url, key), headers=self._headers())
         if resp.status_code == HTTPStatus.NOT_FOUND:
             return None
         elif not resp.ok:
             raise Exception(f"Server error {resp}")
-        return resp.json()
+        return resp.content
 
-    def update(self, key, value) -> None:
-        resp = requests.put(urljoin(self._api_url, key), data=json.dumps(value), headers=self._headers())
+    def update(self, key: str, value: bytes) -> None:
+        resp = requests.put(urljoin(self._api_url, key), data=value, headers=self._headers())
         if resp.status_code == HTTPStatus.NOT_FOUND:
             raise ValueError("Key does not exist.")
         elif not resp.ok:
             raise Exception(f"Server error {resp}")
 
-    def delete(self, key) -> None:
+    def delete(self, key: str) -> None:
         resp = requests.delete(urljoin(self._api_url, key), headers=self._headers())
         if resp.status_code == HTTPStatus.NOT_FOUND:
             raise ValueError("Key does not exist.")
@@ -107,29 +118,29 @@ class HostedPersistentDataStorageCodeBlock(DataStorageCodeBlock):
 class LocalPersistentDataStorageCodeBlock(DataStorageCodeBlock):
     _dir = pathlib.Path("/tmp/bismuth_persistent_storage/")
 
-    def create(self, key, value) -> None:
+    def create(self, key: str, value: bytes) -> None:
         path = self._dir / key
         if path.exists():
             raise ValueError("Key already exists.")
         path.parent.mkdir(parents=True, exist_ok=True)
-        with open(self._dir / key, 'w') as f:
-            json.dump(value, f)
+        with open(self._dir / key, 'wb') as f:
+            f.write(value)
 
-    def retrieve(self, key) -> Optional[Any]:
+    def retrieve(self, key: str) -> Optional[bytes]:
         path = self._dir / key
         if not path.exists():
             return None
-        with open(path, 'r') as f:
-            return json.load(f)
+        with open(path, 'rb') as f:
+            return f.read()
 
-    def update(self, key, value) -> None:
+    def update(self, key: str, value: bytes) -> None:
         path = self._dir / key
         if not path.exists():
             raise ValueError("Key does not exist.")
-        with open(self._dir / key, 'w') as f:
-            json.dump(value, f)
+        with open(self._dir / key, 'wb') as f:
+            f.write(value)
 
-    def delete(self, key) -> None:
+    def delete(self, key: str) -> None:
         path = self._dir / key
         if not path.exists():
             raise ValueError("Key does not exist.")
