@@ -11,17 +11,19 @@ TEST_AUTH = 'testauth123'
 
 
 class MockResponse:
-    def __init__(self, data: Optional[str | bytes], status_code: int):
-        self.data = data
+    def __init__(self, content: Optional[str | bytes], status_code: int):
+        if isinstance(content, str):
+            content = content.encode('utf-8')
+        self.content = content
         self.status_code = status_code
 
     def __repr__(self):
         return f"<{__class__.__name__} status_code={self.status_code}>"
 
     def json(self):
-        if self.data is None:
+        if self.content is None:
             return None
-        return json.loads(self.data)
+        return json.loads(self.content.decode('utf-8'))
 
     @property
     def ok(self):
@@ -49,7 +51,7 @@ def mock_post(storage, url, **kwargs):
     if key in storage:
         return MockResponse(None, 409)
     else:
-        storage[key] = bytes(kwargs['data'], 'utf-8')
+        storage[key] = kwargs['data']
         return MockResponse(None, 200)
 
 def mock_put(storage, url, **kwargs):
@@ -58,7 +60,7 @@ def mock_put(storage, url, **kwargs):
     p = urlparse(url)
     key = p.path[len("/blob/v1/"):]
     if key in storage:
-        storage[key] = bytes(kwargs['data'], 'utf-8')
+        storage[key] = kwargs['data']
         return MockResponse(None, 200)
     else:
         return MockResponse(None, 404)
@@ -93,36 +95,36 @@ def storage(request):
     return request.param
 
 
-def test_hosted_create_and_retrieve_item(storage):
-    storage.create("test_key", "test_value")
-    assert storage.retrieve("test_key") == "test_value"
+def test_create_and_retrieve_item(storage):
+    storage.create("test_key", b"test_value")
+    assert storage.retrieve("test_key") == b"test_value"
 
 
-def test_hosted_update_item(storage):
-    storage.create("test_key", "test_value")
-    storage.update("test_key", "new_test_value")
-    assert storage.retrieve("test_key") == "new_test_value"
+def test_update_item(storage):
+    storage.create("test_key", b"test_value")
+    storage.update("test_key", b"new_test_value")
+    assert storage.retrieve("test_key") == b"new_test_value"
 
 
-def test_hosted_delete_item(storage):
-    storage.create("test_key", "test_value")
+def test_delete_item(storage):
+    storage.create("test_key", b"test_value")
     storage.delete("test_key")
     assert storage.retrieve("test_key") is None
 
 
-def test_hosted_create_existing_key(storage):
-    storage.create("test_key", "test_value")
+def test_create_existing_key(storage):
+    storage.create("test_key", b"test_value")
     with pytest.raises(ValueError):
-        storage.create("test_key", "another_value")
+        storage.create("test_key", b"another_value")
 
 
-def test_hosted_update_nonexistent_key(storage):
+def test_update_nonexistent_key(storage):
     with pytest.raises(ValueError):
-        storage.update("nonexistent_key", "value")
+        storage.update("nonexistent_key", b"value")
 
 
-def test_hosted_list_all_items(storage):
-    storage.create("key1", "value1")
-    storage.create("key2", "value2")
+def test_list_all_items(storage):
+    storage.create("key1", json.dumps("value1").encode('utf-8'))
+    storage.create("key2", json.dumps("value2").encode('utf-8'))
     all_items = storage.list_all()
     assert all_items == {"key1": "value1", "key2": "value2"}
