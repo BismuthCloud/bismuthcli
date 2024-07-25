@@ -2,7 +2,7 @@ from typing import Dict, Any
 from .base_code_block import BaseCodeBlock
 
 
-class DataStorageCodeBlock(BaseCodeBlock):
+class DataStorage(BaseCodeBlock):
     """
     Extends BaseCodeBlock. This class manages data storage operations.
     """

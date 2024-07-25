@@ -2,10 +2,10 @@ from typing import Optional, Any, Callable, Concatenate
 from flask import Flask, Request, request
 from flask_restx import Api, Resource
 from .base_code_block import BaseCodeBlock
-from .configuration_code_block import ConfigurationCodeBlock
+from .configuration import Configuration
 
 
-class APICodeBlock(BaseCodeBlock):
+class API(BaseCodeBlock):
     """
     Extends BaseCodeBlock, this class includes methods and attributes for API code blocks.
     """
@@ -14,14 +14,14 @@ class APICodeBlock(BaseCodeBlock):
     app: Flask
     api: Api
     # The ConfigurationCodeBlock instance for this API.
-    config: ConfigurationCodeBlock
+    config: Configuration
 
     def __init__(
         self,
         title="API",
         version="1.0",
         description="A simple API",
-        config: Optional[ConfigurationCodeBlock] = None,
+        config: Optional[Configuration] = None,
         *args,
         **kwargs
     ):
@@ -37,7 +37,7 @@ class APICodeBlock(BaseCodeBlock):
             return "ok"
 
         if config is None:
-            config = ConfigurationCodeBlock()
+            config = Configuration()
 
         self.config = config
         # Hack: set prefix so that this doesn't register over the root route

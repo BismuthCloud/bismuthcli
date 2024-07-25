@@ -1,10 +1,10 @@
 __version__ = "0.1.19"
 
-from .codeblocks.api_code_block import *
-from .codeblocks.api_code_block_with_storage import *
+from .codeblocks.api import *
+from .codeblocks.api_with_storage import *
 from .codeblocks.base_code_block import *
-from .codeblocks.configuration_code_block import *
-from .codeblocks.data_storage_code_block import *
-from .codeblocks.function_code_block import *
-from .codeblocks.persistent_data_storage_code_block import *
-from .codeblocks.sql_code_block import *
+from .codeblocks.configuration import *
+from .codeblocks.data_storage import *
+from .codeblocks.function import *
+from .codeblocks.persistent_data_storage import *
+from .codeblocks.sql import *

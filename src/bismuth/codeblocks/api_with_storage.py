@@ -1,17 +1,17 @@
 from typing import Callable, Dict, List
 from flask import request, Request
 from flask_restx import Resource
-from .api_code_block import APICodeBlock
-from .data_storage_code_block import DataStorageCodeBlock
+from .api import API
+from .data_storage import DataStorage
 
 
-class APICodeBlockWithStorage(APICodeBlock):
+class APIWithStorage(API):
     """
     A class that extends APICodeBlock to include functionalities for data storage.
     It manages API routes and associates them with specific data storage operations.
     """
     # A dictionary that holds instances of DataStorageCodeBlock, used for managing data storage.
-    data_stores: Dict[str, DataStorageCodeBlock]
+    data_stores: Dict[str, DataStorage]
 
     def __init__(self, *args, **kwargs):
         """
@@ -25,7 +25,7 @@ class APICodeBlockWithStorage(APICodeBlock):
         self,
         route: str,
         methods: List[str],
-        data_storage_block: DataStorageCodeBlock,
+        data_storage_block: DataStorage,
         require_auth: List[str] = ["POST", "DELETE", "PUT"],
         auth_cb: Callable[[Request], bool] = lambda r: True,
     ):

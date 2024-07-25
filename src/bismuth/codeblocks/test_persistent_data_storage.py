@@ -4,7 +4,7 @@ from typing import Optional, Dict
 from unittest import mock
 from urllib.parse import urlparse
 
-from .persistent_data_storage_code_block import _HostedPersistentDataStorageCodeBlock, _LocalPersistentDataStorageCodeBlock
+from .persistent_data_storage import _HostedPersistentDataStorageCodeBlock, _LocalPersistentDataStorageCodeBlock
 
 
 TEST_AUTH = 'testauth123'

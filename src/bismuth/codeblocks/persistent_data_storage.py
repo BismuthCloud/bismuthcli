@@ -8,10 +8,10 @@ from http import HTTPStatus
 from typing import Optional, Dict, Any
 from urllib.parse import urljoin
 
-from .data_storage_code_block import DataStorageCodeBlock
+from .data_storage import DataStorage
 
 
-class PersistentDataStorageCodeBlock(DataStorageCodeBlock):
+class PersistentDataStorage(DataStorage):
     """
     This class makes data storage operations persistent using Bismuth's blob storage service,
     allowing JSON-encodable objects to be persisted.
@@ -59,7 +59,7 @@ class PersistentDataStorageCodeBlock(DataStorageCodeBlock):
         return self._impl.list_all()
 
 
-class _HostedPersistentDataStorageCodeBlock(DataStorageCodeBlock):
+class _HostedPersistentDataStorageCodeBlock(DataStorage):
     # A dictionary of HTTP headers used to authenticate to the storage backend.
     _auth: Dict[str, str]
     # The URL of the storage backend.
@@ -115,7 +115,7 @@ class _HostedPersistentDataStorageCodeBlock(DataStorageCodeBlock):
         return dict((k, json.loads(bytes(v))) for k, v in resp.json().items())
 
 
-class _LocalPersistentDataStorageCodeBlock(DataStorageCodeBlock):
+class _LocalPersistentDataStorageCodeBlock(DataStorage):
     _dir = pathlib.Path("/tmp/bismuth_persistent_storage/")
 
     def create(self, key: str, value: bytes) -> None:

@@ -6,7 +6,7 @@ P = ParamSpec('P')
 R = TypeVar('R')
 
 
-class FunctionCodeBlock(BaseCodeBlock, Generic[P, R]):
+class Function(BaseCodeBlock, Generic[P, R]):
     """
     Extends BaseCodeBlock. Run a python function with some requirements.
     """

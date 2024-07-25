@@ -43,12 +43,12 @@ def mock_svcprovider():
 
 
 def test_get_existant_key():
-    from .configuration_code_block import ConfigurationCodeBlock
-    config = ConfigurationCodeBlock()
+    from .configuration import Configuration
+    config = Configuration()
     assert config.get('SOME_KEY') == "SOME_VALUE"
 
 
 def test_get_nonexistant_key():
-    from .configuration_code_block import ConfigurationCodeBlock
+    from .configuration import Configuration
     with pytest.raises(AttributeError):
-        _ = ConfigurationCodeBlock().get('NONEXISTANT')
+        _ = Configuration().get('NONEXISTANT')
