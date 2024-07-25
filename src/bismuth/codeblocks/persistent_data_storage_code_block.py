@@ -23,9 +23,9 @@ class PersistentDataStorageCodeBlock(DataStorageCodeBlock):
         Initialize the datastore.
         """
         if 'BISMUTH_AUTH' in os.environ:
-            self._impl = HostedPersistentDataStorageCodeBlock(os.environ['BISMUTH_AUTH'], api_url)
+            self._impl = _HostedPersistentDataStorageCodeBlock(os.environ['BISMUTH_AUTH'], api_url)
         else:
-            self._impl = LocalPersistentDataStorageCodeBlock()
+            self._impl = _LocalPersistentDataStorageCodeBlock()
 
     def _encode(self, value) -> bytes:
         return value if isinstance(value, bytes) else json.dumps(value).encode('utf-8')
@@ -59,7 +59,7 @@ class PersistentDataStorageCodeBlock(DataStorageCodeBlock):
         return self._impl.list_all()
 
 
-class HostedPersistentDataStorageCodeBlock(DataStorageCodeBlock):
+class _HostedPersistentDataStorageCodeBlock(DataStorageCodeBlock):
     # A dictionary of HTTP headers used to authenticate to the storage backend.
     _auth: Dict[str, str]
     # The URL of the storage backend.
@@ -115,7 +115,7 @@ class HostedPersistentDataStorageCodeBlock(DataStorageCodeBlock):
         return dict((k, json.loads(bytes(v))) for k, v in resp.json().items())
 
 
-class LocalPersistentDataStorageCodeBlock(DataStorageCodeBlock):
+class _LocalPersistentDataStorageCodeBlock(DataStorageCodeBlock):
     _dir = pathlib.Path("/tmp/bismuth_persistent_storage/")
 
     def create(self, key: str, value: bytes) -> None:

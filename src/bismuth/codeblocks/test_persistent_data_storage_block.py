@@ -4,7 +4,7 @@ from typing import Optional, Dict
 from unittest import mock
 from urllib.parse import urlparse
 
-from .persistent_data_storage_code_block import HostedPersistentDataStorageCodeBlock, LocalPersistentDataStorageCodeBlock
+from .persistent_data_storage_code_block import _HostedPersistentDataStorageCodeBlock, _LocalPersistentDataStorageCodeBlock
 
 
 TEST_AUTH = 'testauth123'
@@ -88,9 +88,9 @@ def mock_svcprovider():
         yield
 
 
-@pytest.fixture(params=[HostedPersistentDataStorageCodeBlock(TEST_AUTH), LocalPersistentDataStorageCodeBlock()])
+@pytest.fixture(params=[_HostedPersistentDataStorageCodeBlock(TEST_AUTH), _LocalPersistentDataStorageCodeBlock()])
 def storage(request):
-    if isinstance(request.param, LocalPersistentDataStorageCodeBlock):
+    if isinstance(request.param, _LocalPersistentDataStorageCodeBlock):
         request.param.clear()
     return request.param
 
