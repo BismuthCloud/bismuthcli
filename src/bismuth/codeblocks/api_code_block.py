@@ -1,7 +1,6 @@
 from typing import Optional, Any, Callable, Concatenate
 from flask import Flask, Request, request
 from flask_restx import Api, Resource
-from .auth_code_block import AuthCodeBlock
 from .base_code_block import BaseCodeBlock
 from .configuration_code_block import ConfigurationCodeBlock
 
@@ -16,8 +15,6 @@ class APICodeBlock(BaseCodeBlock):
     api: Api
     # The ConfigurationCodeBlock instance for this API.
     config: ConfigurationCodeBlock
-    # The AuthCodeBlock instance for this API.
-    auth_code_block: Optional[AuthCodeBlock]
 
     def __init__(
         self,
@@ -25,12 +22,11 @@ class APICodeBlock(BaseCodeBlock):
         version="1.0",
         description="A simple API",
         config: Optional[ConfigurationCodeBlock] = None,
-        auth_code_block: Optional[AuthCodeBlock] = None,
         *args,
         **kwargs
     ):
         """
-        Initializes the APICodeBlock class with optional title, version, description, configuration code block, and authentication code block.
+        Initializes the APICodeBlock class with optional title, version, description, and configuration code block.
         `add_route` should be called in overrides of this to register routes for the API.
         """
         super().__init__(*args, **kwargs)
@@ -55,74 +51,44 @@ class APICodeBlock(BaseCodeBlock):
         )
         # And clear it
         self.api.prefix = ""
-        self.auth_code_block = auth_code_block
-
-    def _auth_handler(
-        self,
-        method: str,
-        request: Request,
-        handlers: dict[str, Callable[Concatenate[Request, ...], Any]],
-        require_auth: list[str],
-        **kwargs: Any
-    ) -> Any:
-        cb = handlers[method]
-
-        if (
-            method.upper() in map(lambda x: x.upper(), require_auth)
-            and self.auth_code_block is not None
-        ):
-            return self.auth_code_block.token_required(cb)(request, **kwargs)
-        else:
-            return cb(request, **kwargs)
 
     def add_route(
         self,
         route: str,
         handlers: dict[str, Callable[Concatenate[Request, ...], Any]],
-        require_auth: list[str] = ["POST", "DELETE", "PUT"],
     ):
         """
         Adds a route to the API.
         Handlers receive the request from flask plus query parameters as kwargs.
         """
         handlers = {k.upper(): v for k, v in handlers.items()}
-        auth_handler = self._auth_handler
 
         class DynamicResource(Resource):
             def get(self):
                 kwargs = request.args.to_dict()
                 if "GET" in handlers:
-                    return auth_handler(
-                        "GET", request, handlers, require_auth, **kwargs
-                    )
+                    return handlers["GET"](request, **kwargs)
                 else:
                     self.api.abort(404)
 
             def post(self):
                 kwargs = request.get_json(silent=True) or {}
                 if "POST" in handlers:
-                    return auth_handler(
-                        "POST", request, handlers, require_auth, **kwargs
-                    )
+                    return handlers["POST"](request, **kwargs)
                 else:
                     self.api.abort(404)
 
             def put(self):
                 kwargs = request.get_json(silent=True) or {}
                 if "PUT" in handlers:
-                    return auth_handler(
-                        "PUT", request, handlers, require_auth, **kwargs
-                    )
+                    return handlers["PUT"](request, **kwargs)
                 else:
                     self.api.abort(404)
 
             def delete(self):
                 kwargs = request.args.to_dict()
-
                 if "DELETE" in handlers:
-                    return auth_handler(
-                        "DELETE", request, handlers, require_auth, **kwargs
-                    )
+                    return handlers["DELETE"](request, **kwargs)
                 else:
                     self.api.abort(404)
 
