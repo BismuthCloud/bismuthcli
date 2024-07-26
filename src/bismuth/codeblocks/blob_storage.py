@@ -8,13 +8,13 @@ from http import HTTPStatus
 from typing import Optional, Dict, Any
 from urllib.parse import urljoin
 
-from .data_storage import DataStorage
+from .base_code_block import BaseCodeBlock
 
 
-class PersistentDataStorage(DataStorage):
+class BlobStorage(BaseCodeBlock):
     """
-    This class makes data storage operations persistent using Bismuth's blob storage service,
-    allowing JSON-encodable objects to be persisted.
+    This class exposes Bismuth's blob storage service, allowing data to be persisted.
+    Bytes are stored plain, while other types are stored as JSON.
     When run locally, it stores data via files in a temporary directory.
     """
 
@@ -23,9 +23,9 @@ class PersistentDataStorage(DataStorage):
         Initialize the datastore.
         """
         if 'BISMUTH_AUTH' in os.environ:
-            self._impl = _HostedPersistentDataStorageCodeBlock(os.environ['BISMUTH_AUTH'], api_url)
+            self._impl = _HostedBlobStorage(os.environ['BISMUTH_AUTH'], api_url)
         else:
-            self._impl = _LocalPersistentDataStorageCodeBlock()
+            self._impl = _LocalBlobStorage()
 
     def _encode(self, value) -> bytes:
         return value if isinstance(value, bytes) else json.dumps(value).encode('utf-8')
@@ -54,12 +54,12 @@ class PersistentDataStorage(DataStorage):
         """Delete an item from the datastore."""
         return self._impl.delete(key)
 
-    def list_all(self) -> Dict[str, Any]:
-        """List all items in the datastore."""
-        return self._impl.list_all()
+    def list_keys(self) -> set[str]:
+        """List all keys in the datastore."""
+        return self._impl.list_keys()
 
 
-class _HostedPersistentDataStorageCodeBlock(DataStorage):
+class _HostedBlobStorage(BaseCodeBlock):
     # A dictionary of HTTP headers used to authenticate to the storage backend.
     _auth: Dict[str, str]
     # The URL of the storage backend.
@@ -108,15 +108,15 @@ class _HostedPersistentDataStorageCodeBlock(DataStorage):
         elif not resp.ok:
             raise Exception(f"Server error {resp}")
 
-    def list_all(self) -> Dict[str, Any]:
+    def list_keys(self) -> set[str]:
         resp = requests.get(self._api_url, headers=self._headers())
         if not resp.ok:
             raise Exception(f"Server error {resp}")
-        return dict((k, json.loads(bytes(v))) for k, v in resp.json().items())
+        return set(resp.json().keys())
 
 
-class _LocalPersistentDataStorageCodeBlock(DataStorage):
-    _dir = pathlib.Path("/tmp/bismuth_persistent_storage/")
+class _LocalBlobStorage(BaseCodeBlock):
+    _dir = pathlib.Path("/tmp/bismuth_blob_storage/")
 
     def create(self, key: str, value: bytes) -> None:
         path = self._dir / key
@@ -146,11 +146,10 @@ class _LocalPersistentDataStorageCodeBlock(DataStorage):
             raise ValueError("Key does not exist.")
         path.unlink()
 
-    def list_all(self) -> Dict[str, Any]:
-        out = {}
+    def list_keys(self) -> set[str]:
+        out = set()
         for fn in self._dir.glob('**/*'):
-            with open(fn, 'r') as f:
-                out[str(fn.relative_to(self._dir))] = json.load(f)
+            out.add(str(fn.relative_to(self._dir)))
         return out
 
     def clear(self) -> None:
