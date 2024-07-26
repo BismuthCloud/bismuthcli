@@ -4,7 +4,7 @@ from typing import Optional, Dict
 from unittest import mock
 from urllib.parse import urlparse
 
-from .persistent_data_storage_code_block import _HostedPersistentDataStorageCodeBlock, _LocalPersistentDataStorageCodeBlock
+from .blob_storage import _HostedBlobStorage, _LocalBlobStorage
 
 
 TEST_AUTH = 'testauth123'
@@ -88,9 +88,9 @@ def mock_svcprovider():
         yield
 
 
-@pytest.fixture(params=[_HostedPersistentDataStorageCodeBlock(TEST_AUTH), _LocalPersistentDataStorageCodeBlock()])
+@pytest.fixture(params=[_HostedBlobStorage(TEST_AUTH), _LocalBlobStorage()])
 def storage(request):
-    if isinstance(request.param, _LocalPersistentDataStorageCodeBlock):
+    if isinstance(request.param, _LocalBlobStorage):
         request.param.clear()
     return request.param
 
@@ -126,5 +126,4 @@ def test_update_nonexistent_key(storage):
 def test_list_all_items(storage):
     storage.create("key1", json.dumps("value1").encode('utf-8'))
     storage.create("key2", json.dumps("value2").encode('utf-8'))
-    all_items = storage.list_all()
-    assert all_items == {"key1": "value1", "key2": "value2"}
+    assert storage.list_keys() == {"key1", "key2"}

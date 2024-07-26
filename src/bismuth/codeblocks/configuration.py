@@ -8,7 +8,7 @@ from urllib.parse import urljoin
 from .base_code_block import BaseCodeBlock
 
 
-class ConfigurationCodeBlock(BaseCodeBlock):
+class Configuration(BaseCodeBlock):
     """
     The ConfigurationCodeBlock provides access to runtime configuration set outside the code.
     Instances of this class expose configuration to the application via the get method,

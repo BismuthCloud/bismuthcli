@@ -5,7 +5,7 @@ import psycopg
 from .base_code_block import BaseCodeBlock
 
 
-class SQLCodeBlock(BaseCodeBlock):
+class SQL(BaseCodeBlock):
     """
     The SQLCodeBlock provides basic access to the Bismuth SQL service.
     """

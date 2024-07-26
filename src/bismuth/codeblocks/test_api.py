@@ -1,15 +1,15 @@
 import os
 import pytest
 from flask import Request
-from .api_code_block import APICodeBlock
-from .function_code_block import FunctionCodeBlock
+from .api import API
+from .function import Function
 
 
 # Fixture to setup the APICodeBlock with mocked routes
 @pytest.fixture
 def api_block():
     os.environ["BISMUTH_AUTH"] = "TEST_AUTH"
-    api_block = APICodeBlock()
+    api_block = API()
     api_block.app.testing = True
     return api_block
 
@@ -32,7 +32,7 @@ def test_add_route(api_block):
     def func(request, **kwargs):
         return {"message": "mock response"}
 
-    api_block.add_route("/mock", {"get": FunctionCodeBlock(func)})
+    api_block.add_route("/mock", {"get": Function(func)})
 
     with api_block.app.test_client() as client:
         response = client.get("/mock")
@@ -56,7 +56,7 @@ def test_add_root_route(api_block):
     def func(request, **kwargs):
         return {"message": "mock response"}
 
-    api_block.add_route("/", {"get": FunctionCodeBlock(func)})
+    api_block.add_route("/", {"get": Function(func)})
 
     with api_block.app.test_client() as client:
         response = client.get("/")
@@ -68,7 +68,7 @@ def test_json_kwargs(api_block):
     def func(request, **kwargs):
         return {"json": kwargs}
 
-    api_block.add_route("/", {"post": FunctionCodeBlock(func)})
+    api_block.add_route("/", {"post": Function(func)})
 
     with api_block.app.test_client() as client:
         response = client.post("/", json={"key": "value"})
@@ -80,7 +80,7 @@ def test_non_json_request(api_block):
     def func(request, **kwargs):
         return {"data": request.get_data(as_text=True)}
 
-    api_block.add_route("/", {"post": FunctionCodeBlock(func)})
+    api_block.add_route("/", {"post": Function(func)})
 
     with api_block.app.test_client() as client:
         response = client.post("/", data={"form": "value"})
