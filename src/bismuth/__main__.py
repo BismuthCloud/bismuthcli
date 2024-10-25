@@ -21,6 +21,10 @@ def install_cli(args):
             triple = "aarch64-unknown-linux-gnu"
         case ("Linux", "x86_64"):
             triple = "x86_64-unknown-linux-gnu"
+        # case ("Windows", "aarch64"):
+        #     triple = "aarch64-pc-windows-gnu"
+        # case ("Windows", "x86_64"):
+        #     triple = "x86_64-pc-windows-gnu"
         case _:
             logging.fatal(f"Unsupported platform {platform.system()} {platform.machine()} ({platform.platform()})")
             return
@@ -34,7 +38,7 @@ def install_cli(args):
             shutil.copyfileobj(resp.raw, tempf)
 
         tempf.flush()
-        binpath = args.dir / 'bismuth'
+        binpath = args.dir / 'biscli'
 
         try:
             os.replace(tempf.name, binpath)
@@ -82,28 +86,37 @@ def install_cli(args):
 
 def quickstart(args):
     print("First, let's log you in to the Bismuth platform.")
-    input(" Press [Enter] to run `bismuth login`")
+    input(" Press [Enter] to run `biscli login`")
     subprocess.run([args.cli, "login"])
 
     print("Next, let's import a project you'd like to work on.")
-    if pathlib.Path('./.git').is_dir() and input("Would you like to use the currect directory? [Y/n] ").lower() == 'y':
-        repo = pathlib.Path('.')
+    gh_or_local = ""
+    while gh_or_local.lower() not in ("github", "local",):
+        gh_or_local = input("Would you like to import a project from GitHub, or use a local repo? [github/local] ")
+
+    if gh_or_local == "github":
+        input(f" Press [Enter] to run `biscli import --github`")
+        subprocess.run([args.cli, "import", "--github"])
     else:
-        while True:
-            repo = pathlib.Path(os.path.expanduser(input("Path to repository: ")))
-            if not repo.is_dir():
-                print("Not a directory")
-                continue
-            if not (repo / '.git').is_dir():
-                print("Not a git repository")
-                continue
-            break
-    repo = str(repo.absolute())
-    input(f" Press [Enter] to run `bismuth import {repo}`")
-    subprocess.run([args.cli, "import", repo])
+        if pathlib.Path('./.git').is_dir() and input("Would you like to use the currect directory? [Y/n] ").lower() in ('y', ''):
+            repo = pathlib.Path('.')
+        else:
+            while True:
+                repo = pathlib.Path(os.path.expanduser(input("Path to repository: ")))
+                if not repo.is_dir():
+                    print("Not a directory")
+                    continue
+                if not (repo / '.git').is_dir():
+                    print("Not a git repository")
+                    continue
+                break
+        repo = str(repo.absolute())
+        input(f" Press [Enter] to run `biscli import {repo}`")
+        subprocess.run([args.cli, "import", repo])
 
     print("Now you can start chatting!")
-    input(f" Press [Enter] to run `bismuth chat --repo {repo}`")
+    print("You can always chat `/help` for more information, or use `/feedback` to send us feedback or report a bug.")
+    input(f" Press [Enter] to run `biscli chat --repo {repo}`")
     subprocess.run([args.cli, "chat", "--repo", repo])
 
 
@@ -119,7 +132,7 @@ if __name__ == "__main__":
     parser_install_cli.set_defaults(func=install_cli)
 
     parser_quickstart = subparsers.add_parser('quickstart', help='See how to use the Bismuth Cloud CLI')
-    parser_quickstart.add_argument('--cli', type=pathlib.Path, help='Path to installed Bismuth CLI', default='/usr/local/bin/bismuth')
+    parser_quickstart.add_argument('--cli', type=pathlib.Path, help='Path to installed Bismuth CLI', default='/usr/local/bin/biscli')
     parser_quickstart.set_defaults(func=quickstart)
 
     args = parser.parse_args()
