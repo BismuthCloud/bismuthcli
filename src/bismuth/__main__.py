@@ -35,7 +35,7 @@ def install_cli(args):
         if not resp.ok:
             logging.fatal("Binary not found (no such version?)")
             return
-        with open(tempfn, 'w') as tempf:
+        with open(tempfn, 'wb') as tempf:
             shutil.copyfileobj(resp.raw, tempf)
 
     binpath = args.dir / 'biscli'
@@ -114,10 +114,10 @@ def quickstart(args):
         input(f" Press [Enter] to run `biscli import {repo}`")
         subprocess.run([args.cli, "import", repo])
 
-    print("Now you can start chatting!")
-    print("You can always chat `/help` for more information, or use `/feedback` to send us feedback or report a bug.")
-    input(f" Press [Enter] to run `biscli chat --repo {repo}`")
-    subprocess.run([args.cli, "chat", "--repo", repo])
+        print("Now you can start chatting!")
+        print("You can always chat `/help` for more information, or use `/feedback` to send us feedback or report a bug.")
+        input(f" Press [Enter] to run `biscli chat --repo {repo}`")
+        subprocess.run([args.cli, "chat", "--repo", repo])
 
 
 if __name__ == "__main__":
