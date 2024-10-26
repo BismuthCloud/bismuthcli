@@ -30,37 +30,37 @@ def install_cli(args):
             return
 
     logging.info(f"Installing Bismuth CLI {args.version} to {args.dir}")
-    with tempfile.NamedTemporaryFile() as tempf:
-        with requests.get(f"https://github.com/BismuthCloud/cli/releases/download/v{args.version}/bismuthcli.{triple}", allow_redirects=True, stream=True) as resp:
-            if not resp.ok:
-                logging.fatal("Binary not found (no such version?)")
-                return
+    tempfn = tempfile.mktemp()
+    with requests.get(f"https://github.com/BismuthCloud/cli/releases/download/v{args.version}/bismuthcli.{triple}", allow_redirects=True, stream=True) as resp:
+        if not resp.ok:
+            logging.fatal("Binary not found (no such version?)")
+            return
+        with open(tempfn, 'w') as tempf:
             shutil.copyfileobj(resp.raw, tempf)
 
-        tempf.flush()
-        binpath = args.dir / 'biscli'
+    binpath = args.dir / 'biscli'
 
-        try:
-            os.replace(tempf.name, binpath)
-            os.chmod(binpath, 0o755)
-        except OSError:
-            logging.warning(f"Unable to install to {binpath}, requesting 'sudo' to install and chmod...")
-            cmd = [
-                "sudo",
-                "mv",
-                tempf.name,
-                str(binpath),
-            ]
-            logging.info(f"Running {cmd}")
-            subprocess.run(cmd)
-            cmd = [
-                "sudo",
-                "chmod",
-                "775",
-                str(binpath),
-            ]
-            logging.info(f"Running {cmd}")
-            subprocess.run(cmd)
+    try:
+        os.replace(tempfn, binpath)
+        os.chmod(binpath, 0o755)
+    except OSError:
+        logging.warning(f"Unable to install to {binpath}, requesting 'sudo' to install and chmod...")
+        cmd = [
+            "sudo",
+            "mv",
+            tempfn,
+            str(binpath),
+        ]
+        logging.info(f"Running {cmd}")
+        subprocess.run(cmd)
+        cmd = [
+            "sudo",
+            "chmod",
+            "775",
+            str(binpath),
+        ]
+        logging.info(f"Running {cmd}")
+        subprocess.run(cmd)
 
     not_in_path = False
     if args.dir not in [pathlib.Path(p) for p in os.environ['PATH'].split(':')]:
