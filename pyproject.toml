@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "bismuthsdk"
+name = "bismuthcli"
 dynamic = ["version"]
 license = ""
 dependencies = [
