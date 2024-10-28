@@ -1,3 +1,3 @@
-# BismuthSDK
+# BismuthCLI
 
-This is the SDK used by the [Bismuth Cloud](https://www.bismuth.cloud) platform.
+This is the CLI installer shim for the [Bismuth Cloud](https://www.bismuth.cloud) platform.

@@ -1,5 +1,4 @@
 import argparse
-import logging
 import os
 import pathlib
 import platform
@@ -7,7 +6,20 @@ import requests
 import subprocess
 import shutil
 import tempfile
+from termcolor import colored, cprint
+from prompt_toolkit import prompt
+from prompt_toolkit.completion import PathCompleter
 
+LOGO = r"""
+ ____  _                     _   _
+| __ )(_)___ _ __ ___  _   _| |_| |__
+|  _ \| / __| '_ ` _ \| | | | __| '_ \
+| |_) | \__ \ | | | | | |_| | |_| | | |
+|____/|_|___/_| |_| |_|\__,_|\__|_| |_|
+"""
+
+ERROR = "❌ " if os.environ.get("TERM") == "xterm-256color" else ""
+WARNING = "⚠️ " if os.environ.get("TERM") == "xterm-256color" else ""
 
 def install_cli(args):
     if args.version == 'LATEST':
@@ -26,14 +38,16 @@ def install_cli(args):
         # case ("Windows", "x86_64"):
         #     triple = "x86_64-pc-windows-gnu"
         case _:
-            logging.fatal(f"Unsupported platform {platform.system()} {platform.machine()} ({platform.platform()})")
+            cprint(f"{ERROR}Unsupported platform {platform.system()} {platform.machine()} ({platform.platform()})", "red")
             return
 
-    logging.info(f"Installing Bismuth CLI {args.version} to {args.dir}")
+    cprint(LOGO, 'light_magenta')
+    print()
+    print(f"Installing Bismuth CLI {args.version} to {args.dir}")
     tempfn = tempfile.mktemp()
     with requests.get(f"https://github.com/BismuthCloud/cli/releases/download/v{args.version}/bismuthcli.{triple}", allow_redirects=True, stream=True) as resp:
         if not resp.ok:
-            logging.fatal("Binary not found (no such version?)")
+            cprint(f"{ERROR}Binary not found (no such version?)", "red")
             return
         with open(tempfn, 'wb') as tempf:
             shutil.copyfileobj(resp.raw, tempf)
@@ -44,14 +58,14 @@ def install_cli(args):
         os.replace(tempfn, binpath)
         os.chmod(binpath, 0o755)
     except OSError:
-        logging.warning(f"Unable to install to {binpath}, requesting 'sudo' to install and chmod...")
+        print(f"Unable to install to {binpath}, requesting 'sudo' to install and chmod...")
         cmd = [
             "sudo",
             "mv",
             tempfn,
             str(binpath),
         ]
-        logging.info(f"Running {cmd}")
+        print(f"Running {cmd}")
         subprocess.run(cmd)
         cmd = [
             "sudo",
@@ -59,13 +73,13 @@ def install_cli(args):
             "775",
             str(binpath),
         ]
-        logging.info(f"Running {cmd}")
+        print(f"Running {cmd}")
         subprocess.run(cmd)
 
     not_in_path = False
     if args.dir not in [pathlib.Path(p) for p in os.environ['PATH'].split(':')]:
         not_in_path = True
-        logging.warning(f"{args.dir} is not in your $PATH - you'll need to add it to your shell rc")
+        cprint(f"{WARNING}{args.dir} is not in your $PATH - you'll need to add it to your shell rc", "yellow")
 
     if args.no_quickstart:
         return
@@ -77,52 +91,44 @@ def install_cli(args):
         if not_in_path:
             cmd += " --cli " + str(binpath)
 
-        print("The CLI is best used inside an IDE.")
-        print(f"Please open a terminal in your IDE of choice and run `{cmd}` to launch the quickstart.")
+        print(f"Please open a terminal in your IDE of choice and run `{colored(cmd, 'light_blue')}` to launch the quickstart.")
         return
 
     quickstart(argparse.Namespace(cli=binpath))
 
 
+def show_cmd(cmd):
+    input(f" Press [Enter] to run `{colored(cmd, 'light_blue')}`")
+
 def quickstart(args):
     print("First, let's log you in to the Bismuth platform.")
-    input(" Press [Enter] to run `biscli login`")
+    show_cmd("biscli login")
     subprocess.run([args.cli, "login"])
 
     print("Next, let's import a project you'd like to work on.")
-    gh_or_local = ""
-    while gh_or_local.lower() not in ("github", "local",):
-        gh_or_local = input("Would you like to import a project from GitHub, or use a local repo? [github/local] ")
-
-    if gh_or_local == "github":
-        input(f" Press [Enter] to run `biscli import --github`")
-        subprocess.run([args.cli, "import", "--github"])
+    if pathlib.Path('./.git').is_dir() and input("Would you like to use the currect directory? [Y/n] ").lower() in ('y', ''):
+        repo = pathlib.Path('.')
     else:
-        if pathlib.Path('./.git').is_dir() and input("Would you like to use the currect directory? [Y/n] ").lower() in ('y', ''):
-            repo = pathlib.Path('.')
-        else:
-            while True:
-                repo = pathlib.Path(os.path.expanduser(input("Path to repository: ")))
-                if not repo.is_dir():
-                    print("Not a directory")
-                    continue
-                if not (repo / '.git').is_dir():
-                    print("Not a git repository")
-                    continue
-                break
-        repo = str(repo.absolute())
-        input(f" Press [Enter] to run `biscli import {repo}`")
-        subprocess.run([args.cli, "import", repo])
+        while True:
+            repo = pathlib.Path(prompt("Path to repository: ", completer=PathCompleter(only_directories=True)))
+            if not (repo / '.git').is_dir():
+                print("Not a git repository")
+                continue
+            break
+    repo = str(repo.absolute())
+    show_cmd(f"biscli import {repo}")
+    subprocess.run([args.cli, "import", repo])
 
-        print("Now you can start chatting!")
-        print("You can always chat `/help` for more information, or use `/feedback` to send us feedback or report a bug.")
-        input(f" Press [Enter] to run `biscli chat --repo {repo}`")
-        subprocess.run([args.cli, "chat", "--repo", repo])
+    cprint("🚀 Now you can start chatting!", "green")
+    print(f"You can always chat `{colored('/help', 'light_blue')}` for more information, or use `{colored('/feedback', 'light_blue')}` to send us feedback or report a bug.")
+    if repo == str(pathlib.Path('.').absolute()):
+        show_cmd("biscli chat")
+    else:
+        show_cmd(f"biscli chat --repo {repo}")
+    subprocess.run([args.cli, "chat", "--repo", repo])
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, format='%(levelname)s :: %(message)s')
-
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(required=True)
     parser_install_cli = subparsers.add_parser('install-cli', help='Install the Bismuth Cloud CLI')

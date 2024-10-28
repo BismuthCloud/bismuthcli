@@ -7,10 +7,9 @@ name = "bismuthcli"
 dynamic = ["version"]
 license = ""
 dependencies = [
-    "flask",
-    "flask-restx",
     "requests",
-    "psycopg[binary]",
+    "termcolor",
+    "prompt_toolkit",
 ]
 readme = "README.md"
 
