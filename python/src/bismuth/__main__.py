@@ -97,12 +97,16 @@ def install_cli(args):
     quickstart(argparse.Namespace(cli=binpath))
 
 
-def show_cmd(cmd):
-    input(f" Press [Enter] to run `{colored(cmd, 'light_blue')}`")
+def show_cmd(cmd, confirm=True):
+    if confirm:
+        input(f" Press [Enter] to run `{colored(cmd, 'light_blue')}`")
+    else:
+        print(f"Running `{colored(cmd, 'light_blue')}`")
+
 
 def quickstart(args):
     print("First, let's log you in to the Bismuth platform.")
-    show_cmd("biscli login")
+    show_cmd("biscli login", confirm=False)  # this already does another "press any key to open"
     subprocess.run([args.cli, "login"])
 
     print("Next, let's import a project you'd like to work on.")
