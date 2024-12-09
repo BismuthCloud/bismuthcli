@@ -1,0 +1,31 @@
+{
+  "name": "bismuthcli",
+  "version": "0.1.0",
+  "description": "Bismuth CLI setup utility",
+  "main": "dist/index.js",
+  "bin": {
+    "bismuthcli": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "prepublishOnly": "npm run build",
+    "prepare": "npm run build"
+  },
+  "keywords": ["bismuth", "cli"],
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "axios": "^1.7.9",
+    "chalk": "^4.1.2",
+    "inquirer": "^8.2.5",
+    "yargs": "^17.7.2"
+  },
+  "devDependencies": {
+    "@types/axios": "^0.14.0",
+    "@types/inquirer": "^8.2.1",
+    "@types/node": "^20.3.1",
+    "@types/yargs": "^17.0.24",
+    "typescript": "^5.1.3"
+  }
+}

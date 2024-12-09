@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  publish-wheel:
+  publish-python:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -26,15 +26,15 @@ jobs:
           pip install hatch
 
       - name: Build Wheel
-        run: hatch build
+        run: cd python && hatch build
 
       - name: Upload Wheel
         uses: actions/upload-artifact@v4
         with:
           if-no-files-found: error
-          path: dist/*
+          path: python/dist/*
 
       - name: Publish
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          packages-dir: dist
+          packages-dir: python/dist
