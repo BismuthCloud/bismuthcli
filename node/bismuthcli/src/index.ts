@@ -161,7 +161,7 @@ async function quickstart(cliPath?: string) {
   console.log(chalk.blue('You can always chat `/help` for more information, or use `/feedback` to send us feedback or report a bug.'));
 
   const chatCmd = cliPath ? `${cliPath} chat --repo "${repoPath}"` : `biscli chat --repo "${repoPath}"`;
-  console.log(chalk.blue(`Press Enter to run: ${chatCmd}`));
+  console.log(chalk.bold(chalk.blue(`Press Enter to run: ${chatCmd}`)));
   await inquirer.prompt([{ type: 'input', name: 'continue', message: 'Press Enter to continue...' }]);
   
   child_process.execSync(chatCmd, { stdio: 'inherit' });

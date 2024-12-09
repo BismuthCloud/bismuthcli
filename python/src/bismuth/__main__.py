@@ -91,7 +91,7 @@ def install_cli(args):
         if not_in_path:
             cmd += " --cli " + str(binpath)
 
-        print(f"Please open a terminal in your IDE of choice and run `{colored(cmd, 'light_blue')}` to launch the quickstart.")
+        cprint(f"Please open a terminal in your IDE of choice and run `{cmd}` to launch the quickstart.", "light_blue", attrs=["bold"])
         return
 
     quickstart(argparse.Namespace(cli=binpath))
