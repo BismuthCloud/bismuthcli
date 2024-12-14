@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "bismuthcli"
 dynamic = ["version"]
-license = ""
+license = "Apache-2.0"
 dependencies = [
     "requests",
     "termcolor",

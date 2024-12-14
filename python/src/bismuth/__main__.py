@@ -109,27 +109,91 @@ def quickstart(args):
     show_cmd("biscli login", confirm=False)  # this already does another "press any key to open"
     subprocess.run([args.cli, "login"])
 
-    print("Next, let's import a project you'd like to work on.")
-    if pathlib.Path('./.git').is_dir() and input("Would you like to use the currect directory? [Y/n] ").lower() in ('y', ''):
-        repo = pathlib.Path('.')
-    else:
-        while True:
-            repo = pathlib.Path(prompt("Path to repository: ", completer=PathCompleter(only_directories=True)))
-            if not (repo / '.git').is_dir():
-                print("Not a git repository")
-                continue
-            break
-    repo = str(repo.absolute())
-    show_cmd(f"biscli import {repo}")
-    subprocess.run([args.cli, "import", repo])
+    print("💭 Would you like to use our sample project to start with?")
+    if input("If not, you'll be able to pick any repository on your computer. [Y/n] ").lower() in ('y', ''):
+        print("Cloning sample project...")
+        if os.path.exists("quickstart-sample"):
+            shutil.rmtree("quickstart-sample")
+        subprocess.run(["git", "clone", "--quiet", "https://github.com/BismuthCloud/quickstart-sample"])
 
-    cprint("🚀 Now you can start chatting!", "green")
-    print(f"You can always chat `{colored('/help', 'light_blue')}` for more information, or use `{colored('/feedback', 'light_blue')}` to send us feedback or report a bug.")
-    if repo == str(pathlib.Path('.').absolute()):
-        show_cmd("biscli chat")
+        repo = "quickstart-sample"
+        print("👉 First, import the repository to Bismuth")
+        show_cmd(f"biscli import {repo}")
+        subprocess.run([args.cli, "import", repo])
+        print("")
+
+        fullpath = pathlib.Path(repo).resolve()
+
+        print("👉 In another terminal, let's run the project to see what we're working with.")
+        print(f"Run {colored('npm run dev', 'light_blue')} and go to the URL.")
+        input("Press [Enter] to continue.")
+
+        print("This is a simple TODO app that we'll have Bismuth extend for us.")
+        print("💡 Fun fact: Bismuth actually created this project from scratch in a single message!")
+        input("Once you've explored the app, kill the development server and press [Enter] to continue the guide.")
+        print("")
+
+        print("👉 Let's start chatting with Bismuth.")
+        print("In your second terminal, open the chat interface:")
+        cprint(f"biscli chat --repo {fullpath}", "light_blue", attrs=["bold"])
+        input("Press [Enter] to continue.")
+
+        print("We're first going to ask Bismuth to add a feature. Send this message:")
+        cprint("Hey Bismuth, I need you to add the ability to set due dates on tasks. If a task is past its due date, it should be highlighted.", "light_blue")
+        print("Bismuth will now plan out how to complete the task, collect relevant information from the repository, and finally begin working.")
+        input("Press [Enter] once Bismuth has finished.")
+        print("")
+
+        print(f"👉 Bismuth is now showing you the diff of the code it wrote. Press {colored('y', 'yellow')} to accept the changes.")
+        print(f"Now, let's check Bismuth's work. Run {colored('npm run dev', 'light_blue')} again and test the new date selection feature.")
+        print("If there is an issue, just launch the chat again, describe the issue, and ask Bismuth to fix it!")
+        input("Once you're done, kill the development server and press [Enter] to continue.")
+        print("")
+
+        print("👉 We're now going to have Bismuth fix an intentionally placed bug.")
+        print(f"Open {colored('App.tsx', 'light_blue')} and delete the")
+        print("    saveTasks(updatedTasks);")
+        print(f"line in {colored('handleToggleTask', 'light_blue')}.")
+        input("Press [Enter] to continue.")
+
+        print("Start the chat again, and send:")
+        cprint("It looks like task toggle state is not saved between page refreshes. Can you fix that?", "light_blue")
+        input("Press [Enter] once Bismuth has finished.")
+        print("")
+
+        print(f"Examine the diff, press {colored('y', 'yellow')} to accept, and let's check Bismuth's work again.")
+        print("Run {colored('npm run dev', 'light_blue')} and make sure toggling a task completed is persisted across refreshes.")
+        input("Press [Enter] to continue.")
+
+        print("👉 Finally, let's delete the project")
+        show_cmd(f"biscli project delete {repo}")
+        subprocess.run([args.cli, "project", "delete", repo])
+
+        print("🚀 And that's it!")
+        print(f"You can now import your own project with {colored('biscli import {path}', 'light_blue')} and begin chatting!")
+        print(f"💡 Use the `{colored('/help', 'light_blue')}` command in chat for more information, or `{colored('/feedback', 'light_blue')}` to send us feedback or report a bug.")
     else:
-        show_cmd(f"biscli chat --repo {repo}")
-    subprocess.run([args.cli, "chat", "--repo", repo])
+        print("Let's import a project you'd like to work on.")
+        if pathlib.Path('./.git').is_dir() and input("Would you like to use the currect directory? [Y/n] ").lower() in ('y', ''):
+            repo = pathlib.Path('.')
+        else:
+            while True:
+                repo = pathlib.Path(prompt("Path to repository: ", completer=PathCompleter(only_directories=True)))
+                if not (repo / '.git').is_dir():
+                    print("Not a git repository")
+                    continue
+                break
+        repo = str(repo.absolute())
+        show_cmd(f"biscli import {repo}")
+        subprocess.run([args.cli, "import", repo])
+
+        cprint("🚀 Now you can start chatting!", "green")
+        print(f"You can always chat `{colored('/help', 'light_blue')}` for more information, or use `{colored('/feedback', 'light_blue')}` to send us feedback or report a bug.")
+        if repo == str(pathlib.Path('.').absolute()):
+            show_cmd("biscli chat")
+        else:
+            show_cmd(f"biscli chat --repo {repo}")
+        subprocess.run([args.cli, "chat", "--repo", repo])
 
 
 if __name__ == "__main__":
