@@ -21,9 +21,12 @@ LOGO = r"""
 ERROR = "❌ " if os.environ.get("TERM") == "xterm-256color" else ""
 WARNING = "⚠️ " if os.environ.get("TERM") == "xterm-256color" else ""
 
+
 def install_cli(args):
-    if args.version == 'LATEST':
-        args.version = requests.get('https://bismuthcloud.github.io/cli/LATEST').text.strip()
+    if args.version == "LATEST":
+        args.version = requests.get(
+            "https://bismuthcloud.github.io/cli/LATEST"
+        ).text.strip()
     match (platform.system(), platform.machine()):
         case ("Darwin", "arm64"):
             triple = "aarch64-apple-darwin"
@@ -38,27 +41,36 @@ def install_cli(args):
         # case ("Windows", "x86_64"):
         #     triple = "x86_64-pc-windows-gnu"
         case _:
-            cprint(f"{ERROR}Unsupported platform {platform.system()} {platform.machine()} ({platform.platform()})", "red")
+            cprint(
+                f"{ERROR}Unsupported platform {platform.system()} {platform.machine()} ({platform.platform()})",
+                "red",
+            )
             return
 
-    cprint(LOGO, 'light_magenta')
+    cprint(LOGO, "light_magenta")
     print()
     print(f"Installing Bismuth CLI {args.version} to {args.dir}")
     tempfn = tempfile.mktemp()
-    with requests.get(f"https://github.com/BismuthCloud/cli/releases/download/v{args.version}/bismuthcli.{triple}", allow_redirects=True, stream=True) as resp:
+    with requests.get(
+        f"https://github.com/BismuthCloud/cli/releases/download/v{args.version}/bismuthcli.{triple}",
+        allow_redirects=True,
+        stream=True,
+    ) as resp:
         if not resp.ok:
             cprint(f"{ERROR}Binary not found (no such version?)", "red")
             return
-        with open(tempfn, 'wb') as tempf:
+        with open(tempfn, "wb") as tempf:
             shutil.copyfileobj(resp.raw, tempf)
 
-    binpath = args.dir / 'biscli'
+    binpath = args.dir / "biscli"
 
     try:
         os.replace(tempfn, binpath)
         os.chmod(binpath, 0o755)
     except OSError:
-        print(f"Unable to install to {binpath}, requesting 'sudo' to install and chmod...")
+        print(
+            f"Unable to install to {binpath}, requesting 'sudo' to install and chmod..."
+        )
         cmd = [
             "sudo",
             "mv",
@@ -77,21 +89,31 @@ def install_cli(args):
         subprocess.run(cmd)
 
     not_in_path = False
-    if args.dir not in [pathlib.Path(p) for p in os.environ['PATH'].split(':')]:
+    if args.dir not in [pathlib.Path(p) for p in os.environ["PATH"].split(":")]:
         not_in_path = True
-        cprint(f"{WARNING}{args.dir} is not in your $PATH - you'll need to add it to your shell rc", "yellow")
+        cprint(
+            f"{WARNING}{args.dir} is not in your $PATH - you'll need to add it to your shell rc",
+            "yellow",
+        )
 
     if args.no_quickstart:
         return
 
     print()
 
-    if os.environ.get('TERM_PROGRAM') != 'vscode' and os.environ.get('TERMINAL_EMULATOR') != 'JetBrains-JediTerm':
+    if (
+        os.environ.get("TERM_PROGRAM") != "vscode"
+        and os.environ.get("TERMINAL_EMULATOR") != "JetBrains-JediTerm"
+    ):
         cmd = "python -m bismuth quickstart"
         if not_in_path:
             cmd += " --cli " + str(binpath)
 
-        cprint(f"Please open a terminal in your IDE of choice and run `{cmd}` to launch the quickstart.", "light_blue", attrs=["bold"])
+        cprint(
+            f"Please open a terminal in your IDE of choice and run `{cmd}` to launch the quickstart.",
+            "light_blue",
+            attrs=["bold"],
+        )
         return
 
     quickstart(argparse.Namespace(cli=binpath))
@@ -106,15 +128,26 @@ def show_cmd(cmd, confirm=True):
 
 def quickstart(args):
     print("First, let's log you in to the Bismuth platform.")
-    show_cmd("biscli login", confirm=False)  # this already does another "press any key to open"
+    show_cmd(
+        "biscli login", confirm=False
+    )  # this already does another "press any key to open"
     subprocess.run([args.cli, "login"])
 
     print("💭 Would you like to use our sample project to start with?")
-    if input("If not, you'll be able to pick any repository on your computer. [Y/n] ").lower() in ('y', ''):
+    if input(
+        "If not, you'll be able to pick any repository on your computer. [Y/n] "
+    ).lower() in ("y", ""):
         print("Cloning sample project...")
         if os.path.exists("quickstart-sample"):
             shutil.rmtree("quickstart-sample")
-        subprocess.run(["git", "clone", "--quiet", "https://github.com/BismuthCloud/quickstart-sample"])
+        subprocess.run(
+            [
+                "git",
+                "clone",
+                "--quiet",
+                "https://github.com/BismuthCloud/quickstart-sample",
+            ]
+        )
 
         repo = "quickstart-sample"
         print("👉 First, import the repository to Bismuth")
@@ -124,13 +157,19 @@ def quickstart(args):
 
         fullpath = pathlib.Path(repo).resolve()
 
-        print("👉 In another terminal, let's run the project to see what we're working with.")
+        print(
+            "👉 In another terminal, let's run the project to see what we're working with."
+        )
         print(f"Run {colored('npm run dev', 'light_blue')} and go to the URL.")
         input("Press [Enter] to continue.")
 
         print("This is a simple TODO app that we'll have Bismuth extend for us.")
-        print("💡 Fun fact: Bismuth actually created this project from scratch in a single message!")
-        input("Once you've explored the app, kill the development server and press [Enter] to continue the guide.")
+        print(
+            "💡 Fun fact: Bismuth actually created this project from scratch in a single message!"
+        )
+        input(
+            "Once you've explored the app, kill the development server and press [Enter] to continue the guide."
+        )
         print("")
 
         print("👉 Let's start chatting with Bismuth.")
@@ -139,15 +178,28 @@ def quickstart(args):
         input("Press [Enter] to continue.")
 
         print("We're first going to ask Bismuth to add a feature. Send this message:")
-        cprint("Hey Bismuth, I need you to add the ability to set due dates on tasks. If a task is past its due date, it should be highlighted.", "light_blue")
-        print("Bismuth will now plan out how to complete the task, collect relevant information from the repository, and finally begin working.")
+        cprint(
+            "Hey Bismuth, I need you to add the ability to set due dates on tasks. If a task is past its due date, it should be highlighted.",
+            "magenta",
+        )
+        print(
+            "Bismuth will now plan out how to complete the task, collect relevant information from the repository, and finally begin working."
+        )
         input("Press [Enter] once Bismuth has finished.")
         print("")
 
-        print(f"👉 Bismuth is now showing you the diff of the code it wrote. Press {colored('y', 'yellow')} to accept the changes.")
-        print(f"Now, let's check Bismuth's work. Run {colored('npm run dev', 'light_blue')} again and test the new date selection feature.")
-        print("If there is an issue, just launch the chat again, describe the issue, and ask Bismuth to fix it!")
-        input("Once you're done, kill the development server and press [Enter] to continue.")
+        print(
+            f"👉 Bismuth is now showing you the diff of the code it wrote. Press {colored('y', 'yellow')} to accept the changes."
+        )
+        print(
+            f"Now, let's check Bismuth's work. Run {colored('npm run dev', 'light_blue')} again and test the new date selection feature."
+        )
+        print(
+            "If there is an issue, just launch the chat again, describe the issue, and ask Bismuth to fix it!"
+        )
+        input(
+            "Once you're done, kill the development server and press [Enter] to continue."
+        )
         print("")
 
         print("👉 We're now going to have Bismuth fix an intentionally placed bug.")
@@ -157,29 +209,49 @@ def quickstart(args):
         input("Press [Enter] to continue.")
 
         print("Start the chat again, and send:")
-        cprint("It looks like task toggle state is not saved between page refreshes. Can you fix that?", "light_blue")
+        cprint(
+            "It looks like task toggle state is not saved between page refreshes. Can you fix that?",
+            "magenta",
+        )
         input("Press [Enter] once Bismuth has finished.")
         print("")
 
-        print(f"Examine the diff, press {colored('y', 'yellow')} to accept, and let's check Bismuth's work again.")
-        print("Run {colored('npm run dev', 'light_blue')} and make sure toggling a task completed is persisted across refreshes.")
+        print(
+            f"Examine the diff, press {colored('y', 'yellow')} to accept, and let's check Bismuth's work again."
+        )
+        print(
+            "Run {colored('npm run dev', 'light_blue')} and make sure toggling a task completed is persisted across refreshes."
+        )
         input("Press [Enter] to continue.")
+        print("")
 
         print("👉 Finally, let's delete the project")
         show_cmd(f"biscli project delete {repo}")
         subprocess.run([args.cli, "project", "delete", repo])
+        print("")
 
         print("🚀 And that's it!")
-        print(f"You can now import your own project with {colored('biscli import {path}', 'light_blue')} and begin chatting!")
-        print(f"💡 Use the `{colored('/help', 'light_blue')}` command in chat for more information, or `{colored('/feedback', 'light_blue')}` to send us feedback or report a bug.")
+        print(
+            f"You can now import your own project with {colored('biscli import {path}', 'light_blue')} and begin chatting!"
+        )
+        print(
+            f"💡 Use the `{colored('/help', 'light_blue')}` command in chat for more information, or `{colored('/feedback', 'light_blue')}` to send us feedback or report a bug."
+        )
     else:
         print("Let's import a project you'd like to work on.")
-        if pathlib.Path('./.git').is_dir() and input("Would you like to use the currect directory? [Y/n] ").lower() in ('y', ''):
-            repo = pathlib.Path('.')
+        if pathlib.Path("./.git").is_dir() and input(
+            "Would you like to use the currect directory? [Y/n] "
+        ).lower() in ("y", ""):
+            repo = pathlib.Path(".")
         else:
             while True:
-                repo = pathlib.Path(prompt("Path to repository: ", completer=PathCompleter(only_directories=True)))
-                if not (repo / '.git').is_dir():
+                repo = pathlib.Path(
+                    prompt(
+                        "Path to repository: ",
+                        completer=PathCompleter(only_directories=True),
+                    )
+                )
+                if not (repo / ".git").is_dir():
                     print("Not a git repository")
                     continue
                 break
@@ -188,8 +260,10 @@ def quickstart(args):
         subprocess.run([args.cli, "import", repo])
 
         cprint("🚀 Now you can start chatting!", "green")
-        print(f"You can always chat `{colored('/help', 'light_blue')}` for more information, or use `{colored('/feedback', 'light_blue')}` to send us feedback or report a bug.")
-        if repo == str(pathlib.Path('.').absolute()):
+        print(
+            f"💡 Use the `{colored('/help', 'light_blue')}` command in chat for more information, or `{colored('/feedback', 'light_blue')}` to send us feedback or report a bug."
+        )
+        if repo == str(pathlib.Path(".").absolute()):
             show_cmd("biscli chat")
         else:
             show_cmd(f"biscli chat --repo {repo}")
@@ -199,14 +273,32 @@ def quickstart(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(required=True)
-    parser_install_cli = subparsers.add_parser('install-cli', help='Install the Bismuth Cloud CLI')
-    parser_install_cli.add_argument('--dir', type=pathlib.Path, help='Directory to install the CLI', default='/usr/local/bin/')
-    parser_install_cli.add_argument('--version', type=str, help='Version to install', default='LATEST')
-    parser_install_cli.add_argument('--no-quickstart', help='Skip quickstart', action='store_true')
+    parser_install_cli = subparsers.add_parser(
+        "install-cli", help="Install the Bismuth Cloud CLI"
+    )
+    parser_install_cli.add_argument(
+        "--dir",
+        type=pathlib.Path,
+        help="Directory to install the CLI",
+        default="/usr/local/bin/",
+    )
+    parser_install_cli.add_argument(
+        "--version", type=str, help="Version to install", default="LATEST"
+    )
+    parser_install_cli.add_argument(
+        "--no-quickstart", help="Skip quickstart", action="store_true"
+    )
     parser_install_cli.set_defaults(func=install_cli)
 
-    parser_quickstart = subparsers.add_parser('quickstart', help='See how to use the Bismuth Cloud CLI')
-    parser_quickstart.add_argument('--cli', type=pathlib.Path, help='Path to installed Bismuth CLI', default='/usr/local/bin/biscli')
+    parser_quickstart = subparsers.add_parser(
+        "quickstart", help="See how to use the Bismuth Cloud CLI"
+    )
+    parser_quickstart.add_argument(
+        "--cli",
+        type=pathlib.Path,
+        help="Path to installed Bismuth CLI",
+        default="/usr/local/bin/biscli",
+    )
     parser_quickstart.set_defaults(func=quickstart)
 
     args = parser.parse_args()
