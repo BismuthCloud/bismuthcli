@@ -126,6 +126,7 @@ async function installCli(argv: any) {
 }
 
 async function quickstart(cliPath?: string) {
+  console.log(chalk.magenta("Welcome to the Bismuth Quickstart Guide!"));
   console.log("First, let's log you in to the Bismuth platform.");
   
   const loginCmd = cliPath ? `${cliPath} login` : 'biscli login';
@@ -133,38 +134,126 @@ async function quickstart(cliPath?: string) {
   
   child_process.execSync(loginCmd, { stdio: 'inherit' });
 
-  console.log("Next, let's import a project you'd like to work on.");
-  
-  const isGitRepo = fs.existsSync(path.join(process.cwd(), '.git'));
+  console.log("\n💭 Would you like to use our sample project to start with?");
+  const { useSampleProject } = await inquirer.prompt([{
+    type: 'confirm',
+    name: 'useSampleProject',
+    message: 'If not, you\'ll be able to pick any repository on your computer.',
+    default: true
+  }]);
+
   let repoPath: string;
-
-  if (isGitRepo) {
-    const { useCurrentDir } = await inquirer.prompt([{
-      type: 'confirm',
-      name: 'useCurrentDir',
-      message: 'Would you like to use the current directory?',
-      default: true
-    }]);
-
-    repoPath = useCurrentDir ? process.cwd() : await selectRepository();
+  if (useSampleProject) {
+    // Sample Project Walkthrough
+    console.log("\nCloning sample project...");
+    const sampleRepoPath = 'quickstart-sample';
+    
+    // Remove existing sample project if it exists
+    if (fs.existsSync(sampleRepoPath)) {
+      fs.rmSync(sampleRepoPath, { recursive: true, force: true });
+    }
+    
+    child_process.execSync('git clone --quiet https://github.com/BismuthCloud/quickstart-sample', { stdio: 'inherit' });
+    
+    console.log("\n👉 First, import the repository to Bismuth");
+    const importCmd = cliPath ? `${cliPath} import ${sampleRepoPath}` : `biscli import ${sampleRepoPath}`;
+    console.log(chalk.blue(`Running: ${importCmd}`));
+    await pressEnterToContinue();
+    
+    child_process.execSync(importCmd, { stdio: 'inherit' });
+    
+    repoPath = path.resolve(sampleRepoPath);
+    
+    console.log("\n👉 In another terminal, let's run the project to see what we're working with.");
+    console.log(chalk.blue("Run 'npm run dev' and go to the URL."));
+    await pressEnterToContinue();
+    
+    console.log("\nThis is a simple TODO app that we'll have Bismuth extend for us.");
+    console.log("💡 Fun fact: Bismuth actually created this project from scratch in a single message!");
+    await pressEnterToContinue("Once you've explored the app, kill the development server and press Enter to continue the guide.");
+    
+    console.log("\n👉 Let's start chatting with Bismuth.");
+    console.log("In your second terminal, open the chat interface:");
+    const chatCmd = cliPath ? `${cliPath} chat --repo "${repoPath}"` : `biscli chat --repo "${repoPath}"`;
+    console.log(chalk.blue(chatCmd));
+    await pressEnterToContinue();
+    
+    console.log("\nWe're first going to ask Bismuth to add a feature. Send this message:");
+    console.log(chalk.blue("Hey Bismuth, I need you to add the ability to set due dates on tasks. If a task is past its due date, it should be highlighted."));
+    console.log("Bismuth will now plan out how to complete the task, collect relevant information from the repository, and finally begin working.");
+    await pressEnterToContinue("Press Enter once Bismuth has finished.");
+    
+    console.log(`\n👉 Bismuth is now showing you the diff of the code it wrote. Press ${chalk.yellow('y')} to accept the changes.`);
+    console.log(`Now, let's check Bismuth's work. Run ${chalk.blue('npm run dev')} again and test the new date selection feature.`);
+    console.log("If there is an issue, just launch the chat again, describe the issue, and ask Bismuth to fix it!");
+    await pressEnterToContinue("Once you're done, kill the development server and press Enter to continue.");
+    
+    console.log("\n👉 We're now going to have Bismuth fix an intentionally placed bug.");
+    console.log(`Open ${chalk.blue('App.tsx')} and delete the`);
+    console.log("    saveTasks(updatedTasks);");
+    console.log(`line in ${chalk.blue('handleToggleTask')}.`);
+    await pressEnterToContinue();
+    
+    console.log("\nStart the chat again, and send:");
+    console.log(chalk.blue("It looks like task toggle state is not saved between page refreshes. Can you fix that?"));
+    await pressEnterToContinue("Press Enter once Bismuth has finished.");
+    
+    console.log(`\nExamine the diff, press ${chalk.yellow('y')} to accept, and let's check Bismuth's work again.`);
+    console.log(`Run ${chalk.blue('npm run dev')} and make sure toggling a task completed is persisted across refreshes.`);
+    await pressEnterToContinue();
+    
+    console.log("\n👉 Finally, let's delete the project");
+    const deleteCmd = cliPath ? `${cliPath} project delete ${sampleRepoPath}` : `biscli project delete ${sampleRepoPath}`;
+    console.log(chalk.blue(`Running: ${deleteCmd}`));
+    await pressEnterToContinue();
+    
+    child_process.execSync(deleteCmd, { stdio: 'inherit' });
+    
+    console.log("\n🚀 And that's it!");
+    console.log(chalk.blue(`You can now import your own project with 'biscli import ${path}' and begin chatting!`));
+    console.log(chalk.blue("💡 Use the '/help' command in chat for more information, or '/feedback' to send us feedback or report a bug."));
   } else {
-    repoPath = await selectRepository();
+    // User's Own Project Walkthrough
+    console.log("\nLet's import a project you'd like to work on.");
+    
+    const isGitRepo = fs.existsSync(path.join(process.cwd(), '.git'));
+    
+    if (isGitRepo) {
+      const { useCurrentDir } = await inquirer.prompt([{
+        type: 'confirm',
+        name: 'useCurrentDir',
+        message: 'Would you like to use the current directory?',
+        default: true
+      }]);
+
+      repoPath = useCurrentDir ? process.cwd() : await selectRepository();
+    } else {
+      repoPath = await selectRepository();
+    }
+
+    const importCmd = cliPath ? `${cliPath} import "${repoPath}"` : `biscli import "${repoPath}"`;
+    console.log(chalk.blue(`Running: ${importCmd}`));
+    await pressEnterToContinue();
+    
+    child_process.execSync(importCmd, { stdio: 'inherit' });
+
+    console.log(chalk.green('🚀 Now you can start chatting!'));
+    console.log(chalk.blue(`You can always chat '/help' for more information, or use '/feedback' to send us feedback or report a bug.`));
   }
 
-  const importCmd = cliPath ? `${cliPath} import "${repoPath}"` : `biscli import "${repoPath}"`;
-  console.log(chalk.blue(`Press Enter to run: ${importCmd}`));
-  await inquirer.prompt([{ type: 'input', name: 'continue', message: 'Press Enter to continue...' }]);
-  
-  child_process.execSync(importCmd, { stdio: 'inherit' });
-
-  console.log(chalk.green('🚀 Now you can start chatting!'));
-  console.log(chalk.blue('You can always chat `/help` for more information, or use `/feedback` to send us feedback or report a bug.'));
-
   const chatCmd = cliPath ? `${cliPath} chat --repo "${repoPath}"` : `biscli chat --repo "${repoPath}"`;
-  console.log(chalk.bold(chalk.blue(`Press Enter to run: ${chatCmd}`)));
-  await inquirer.prompt([{ type: 'input', name: 'continue', message: 'Press Enter to continue...' }]);
+  console.log(chalk.bold(chalk.blue(`Running: ${chatCmd}`)));
+  await pressEnterToContinue();
   
   child_process.execSync(chatCmd, { stdio: 'inherit' });
+}
+
+async function pressEnterToContinue(message: string = 'Press Enter to continue...') {
+  await inquirer.prompt([{ 
+    type: 'input', 
+    name: 'continue', 
+    message: message 
+  }]);
 }
 
 async function selectRepository(): Promise<string> {

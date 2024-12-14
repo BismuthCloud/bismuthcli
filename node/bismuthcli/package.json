@@ -12,7 +12,10 @@
     "prepublishOnly": "npm run build",
     "prepare": "npm run build"
   },
-  "keywords": ["bismuth", "cli"],
+  "keywords": [
+    "bismuth",
+    "cli"
+  ],
   "author": "",
   "license": "Apache-2.0",
   "dependencies": {
@@ -26,6 +29,9 @@
     "@types/inquirer": "^8.2.1",
     "@types/node": "^20.3.1",
     "@types/yargs": "^17.0.24",
+    "@typescript-eslint/eslint-plugin": "^8.18.0",
+    "@typescript-eslint/parser": "^8.18.0",
+    "eslint": "^9.17.0",
     "typescript": "^5.1.3"
   }
 }
