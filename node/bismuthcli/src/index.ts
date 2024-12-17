@@ -139,8 +139,7 @@ async function installCli(argv: any) {
 }
 
 async function quickstart(cliPath?: string) {
-  console.log(chalk.magenta("Welcome to the Bismuth Quickstart Guide!"));
-  console.log("Let's log you in to the Bismuth platform.");
+  console.log("First, let's log you in to the Bismuth platform.");
 
   const loginCmd = cliPath ? `${cliPath} login` : "biscli login";
   console.log(`Running: ${chalk.cyan(loginCmd)}`);
@@ -191,7 +190,11 @@ async function quickstart(cliPath?: string) {
     console.log(
       "👉 In another terminal, let's run the project to see what we're working with."
     );
-    console.log(`Run ${chalk.cyan("npm run dev")} and go to the URL.`);
+    console.log(
+      `cd to ${chalk.cyan(sampleRepoPath)} and run ${chalk.cyan(
+        "npm i && npm run dev"
+      )} and go to the URL.`
+    );
     await pressEnterToContinue();
 
     console.log(
@@ -233,9 +236,11 @@ async function quickstart(cliPath?: string) {
       )} to accept the changes.`
     );
     console.log(
-      `Now, let's check Bismuth's work. Run ${chalk.cyan(
+      `Now, let's check Bismuth's work. Hit ${chalk.yellow(
+        "Esc"
+      )} to exit the chat interface, run ${chalk.cyan(
         "npm run dev"
-      )} again and test the new date selection feature.`
+      )} again, and test the new date selection feature.`
     );
     console.log(
       "If there is an issue, just launch the chat again, describe the issue, and ask Bismuth to fix it!"
@@ -248,7 +253,7 @@ async function quickstart(cliPath?: string) {
     console.log(
       "👉 We're now going to have Bismuth fix an intentionally placed bug."
     );
-    console.log(`Open ${chalk.cyan("App.tsx")} and delete the`);
+    console.log(`Open ${chalk.cyan("src/App.tsx")} and delete the`);
     console.log("    saveTasks(updatedTasks);");
     console.log(`line in ${chalk.cyan("handleToggleTask")}.`);
     await pressEnterToContinue();
@@ -279,17 +284,22 @@ async function quickstart(cliPath?: string) {
     const deleteCmd = cliPath
       ? `${cliPath} project delete ${sampleRepoPath}`
       : `biscli project delete ${sampleRepoPath}`;
-    console.log(`Running: ${chalk.cyan(deleteCmd)}`);
+    console.log(`Run ${chalk.cyan(deleteCmd)}`);
     await pressEnterToContinue();
     console.log("");
 
-    child_process.execSync(deleteCmd, { stdio: "inherit" });
-
     console.log("🚀 And that's it!");
     console.log(
-      `You can now import your own project with '${chalk.cyan(
+      `You can now import your own project with ${chalk.cyan(
         "biscli import {path}"
-      )}' and begin chatting!`
+      )} and begin chatting!`
+    );
+    console.log(
+      `💡 Use the '${chalk.cyan(
+        "/help"
+      )}' command in chat for more information, or '${chalk.cyan(
+        "/feedback"
+      )}' to send us feedback or report a bug.`
     );
   } else {
     // User's Own Project Walkthrough

@@ -27,25 +27,26 @@ def install_cli(args):
         args.version = requests.get(
             "https://bismuthcloud.github.io/cli/LATEST"
         ).text.strip()
-    match (platform.system(), platform.machine()):
-        case ("Darwin", "arm64"):
-            triple = "aarch64-apple-darwin"
-        case ("Darwin", "x86_64"):
-            triple = "x86_64-apple-darwin"
-        case ("Linux", "aarch64"):
-            triple = "aarch64-unknown-linux-gnu"
-        case ("Linux", "x86_64"):
-            triple = "x86_64-unknown-linux-gnu"
-        # case ("Windows", "aarch64"):
-        #     triple = "aarch64-pc-windows-gnu"
-        # case ("Windows", "x86_64"):
-        #     triple = "x86_64-pc-windows-gnu"
-        case _:
-            cprint(
-                f"{ERROR}Unsupported platform {platform.system()} {platform.machine()} ({platform.platform()})",
-                "red",
-            )
-            return
+
+    system, machine = platform.system(), platform.machine()
+    if system == "Darwin" and machine == "arm64":
+        triple = "aarch64-apple-darwin"
+    elif system == "Darwin" and machine == "x86_64":
+        triple = "x86_64-apple-darwin"
+    elif system == "Linux" and machine == "aarch64":
+        triple = "aarch64-unknown-linux-gnu"
+    elif system == "Linux" and machine == "x86_64":
+        triple = "x86_64-unknown-linux-gnu"
+    # elif system == "Windows" and machine == "aarch64":
+    #     triple = "aarch64-pc-windows-gnu"
+    # elif system == "Windows" and machine == "x86_64":
+    #     triple = "x86_64-pc-windows-gnu"
+    else:
+        cprint(
+            f"{ERROR}Unsupported platform {platform.system()} {platform.machine()} ({platform.platform()})",
+            "red",
+        )
+        return
 
     cprint(LOGO, "light_magenta")
     print()
@@ -110,7 +111,7 @@ def install_cli(args):
             cmd += " --cli " + str(binpath)
 
         cprint(
-            f"Please open a terminal in your IDE of choice and run `{cmd}` to launch the quickstart.",
+            f"Please open a terminal in your IDE of choice and run {cmd} to launch the quickstart.",
             "light_blue",
             attrs=["bold"],
         )
@@ -121,9 +122,9 @@ def install_cli(args):
 
 def show_cmd(cmd, confirm=True):
     if confirm:
-        input(f" Press [Enter] to run `{colored(cmd, 'light_blue')}`")
+        input(f" Press [Enter] to run {colored(cmd, 'light_blue')}")
     else:
-        print(f"Running `{colored(cmd, 'light_blue')}`")
+        print(f"Running {colored(cmd, 'light_blue')}")
 
 
 def quickstart(args):
@@ -133,6 +134,7 @@ def quickstart(args):
     )  # this already does another "press any key to open"
     subprocess.run([args.cli, "login"])
 
+    print("")
     print("💭 Would you like to use our sample project to start with?")
     if input(
         "If not, you'll be able to pick any repository on your computer. [Y/n] "
@@ -148,6 +150,7 @@ def quickstart(args):
                 "https://github.com/BismuthCloud/quickstart-sample",
             ]
         )
+        print("")
 
         repo = "quickstart-sample"
         print("👉 First, import the repository to Bismuth")
@@ -155,12 +158,14 @@ def quickstart(args):
         subprocess.run([args.cli, "import", repo])
         print("")
 
-        fullpath = pathlib.Path(repo).resolve()
+        fullpath = str(pathlib.Path(repo).resolve())
 
         print(
             "👉 In another terminal, let's run the project to see what we're working with."
         )
-        print(f"Run {colored('npm run dev', 'light_blue')} and go to the URL.")
+        print(
+            f"cd to {colored(fullpath, 'light_blue')} and run {colored('npm i && npm run dev', 'light_blue')} and go to the URL."
+        )
         input("Press [Enter] to continue.")
 
         print("This is a simple TODO app that we'll have Bismuth extend for us.")
@@ -192,7 +197,7 @@ def quickstart(args):
             f"👉 Bismuth is now showing you the diff of the code it wrote. Press {colored('y', 'yellow')} to accept the changes."
         )
         print(
-            f"Now, let's check Bismuth's work. Run {colored('npm run dev', 'light_blue')} again and test the new date selection feature."
+            f"Now, let's check Bismuth's work. Hit {colored('Esc', 'yellow')} to exit the chat interface, run {colored('npm run dev', 'light_blue')} again, and test the new date selection feature."
         )
         print(
             "If there is an issue, just launch the chat again, describe the issue, and ask Bismuth to fix it!"
@@ -203,7 +208,7 @@ def quickstart(args):
         print("")
 
         print("👉 We're now going to have Bismuth fix an intentionally placed bug.")
-        print(f"Open {colored('App.tsx', 'light_blue')} and delete the")
+        print(f"Open {colored('src/App.tsx', 'light_blue')} and delete the")
         print("    saveTasks(updatedTasks);")
         print(f"line in {colored('handleToggleTask', 'light_blue')}.")
         input("Press [Enter] to continue.")
@@ -220,14 +225,14 @@ def quickstart(args):
             f"Examine the diff, press {colored('y', 'yellow')} to accept, and let's check Bismuth's work again."
         )
         print(
-            "Run {colored('npm run dev', 'light_blue')} and make sure toggling a task completed is persisted across refreshes."
+            f"Run {colored('npm run dev', 'light_blue')} and make sure toggling a task completed is persisted across refreshes."
         )
         input("Press [Enter] to continue.")
         print("")
 
         print("👉 Finally, let's delete the project")
-        show_cmd(f"biscli project delete {repo}")
-        subprocess.run([args.cli, "project", "delete", repo])
+        print(f"Run {colored(f"biscli project delete {repo}", 'light_blue')}")
+        input("Press [Enter] to continue.")
         print("")
 
         print("🚀 And that's it!")
