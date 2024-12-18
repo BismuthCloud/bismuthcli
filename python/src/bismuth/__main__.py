@@ -231,7 +231,7 @@ def quickstart(args):
         print("")
 
         print("👉 Finally, let's delete the project")
-        print(f"Run {colored(f"biscli project delete {repo}", 'light_blue')}")
+        print(f"Run {colored(f'biscli project delete {repo}', 'light_blue')}")
         input("Press [Enter] to continue.")
         print("")
 
