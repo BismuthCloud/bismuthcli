@@ -1,0 +1,40 @@
+name: Test
+
+on:
+  push:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  test-python:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install
+        run: cd python && pip3 install -e .
+
+      - name: Test Install
+        run: python3 -m bismuth install-cli
+
+  test-node:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'latest'
+
+      - name: Test Install
+        run: cd node/bismuthcli && npm run build && npm run start -- install --no-quickstart
