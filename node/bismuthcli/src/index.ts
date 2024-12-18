@@ -121,7 +121,7 @@ async function installCli(argv: any) {
 
     console.log(chalk.green(`✅ Installed Bismuth CLI to ${binPath}`));
 
-    if (!argv.noQuickstart) {
+    if (argv.quickstart) {
       await quickstart(binPath);
     }
   } catch (error: any) {
@@ -398,10 +398,10 @@ const parsed = yargs(hideBin(process.argv))
           description: "Version to install",
           default: "LATEST",
         })
-        .option("no-quickstart", {
+        .option("quickstart", {
           type: "boolean",
-          description: "Skip quickstart",
-          default: false,
+          description: "Run quickstart",
+          default: true,
         });
     },
     installCli
