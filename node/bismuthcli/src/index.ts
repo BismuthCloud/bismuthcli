@@ -39,30 +39,6 @@ function getPlatformTriple(): string {
   throw new Error(`Unsupported platform: ${platform} ${arch}`);
 }
 
-function checkPermissions(installDir: string): boolean {
-  try {
-    // Check if we have write permissions to the installation directory
-    fs.accessSync(installDir, fs.constants.W_OK);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function elevatePermissions(command: string): boolean {
-  try {
-    // Try sudo on Unix-like systems
-    if (process.platform !== "win32") {
-      child_process.execSync(`sudo ${command}`, { stdio: "inherit" });
-      return true;
-    }
-    return false;
-  } catch (error) {
-    console.error(chalk.red("❌ Permission elevation failed:"), error);
-    return false;
-  }
-}
-
 async function installCli(argv: any) {
   console.log(chalk.magenta(LOGO));
   console.log();
@@ -74,67 +50,43 @@ async function installCli(argv: any) {
           .then((r) => r.data.trim())
       : argv.cliVersion;
 
-  const installDir = argv.dir || "/usr/local/bin/";
+  const installDir =
+    argv.dir ||
+    (fs.existsSync(path.join(os.homedir(), "bin"))
+      ? path.join(os.homedir(), "bin")
+      : path.join(os.homedir(), ".local/bin"));
   const binPath = path.join(installDir, "biscli");
 
   console.log(`Installing Bismuth CLI ${version} to ${installDir}`);
 
-  try {
-    const triple = getPlatformTriple();
-    const downloadUrl = `https://github.com/BismuthCloud/cli/releases/download/v${version}/bismuthcli.${triple}`;
+  const triple = getPlatformTriple();
+  const downloadUrl = `https://github.com/BismuthCloud/cli/releases/download/v${version}/bismuthcli.${triple}`;
 
-    const response = await axios({
-      method: "get",
-      url: downloadUrl,
-      responseType: "arraybuffer",
-    });
+  const response = await axios({
+    method: "get",
+    url: downloadUrl,
+    responseType: "arraybuffer",
+  });
 
-    // Check and handle permissions
-    if (!checkPermissions(installDir)) {
-      console.log(
-        chalk.yellow(`⚠️  No write access to ${installDir}. Requesting sudo...`)
-      );
+  fs.mkdirSync(installDir, { recursive: true });
+  fs.writeFileSync(binPath, response.data, { mode: 0o755 });
 
-      // Try to create directory with sudo
-      const mkdirCommand = `mkdir -p ${installDir}`;
-      if (!elevatePermissions(mkdirCommand)) {
-        throw new Error(
-          `Cannot create directory ${installDir}. Please check your permissions.`
-        );
-      }
+  console.log(chalk.green(`✅ Installed Bismuth CLI to ${binPath}`));
 
-      // Try to write file with sudo
-      const tempFilePath = path.join(os.tmpdir(), "bismuthcli");
-      fs.writeFileSync(tempFilePath, response.data, { mode: 0o755 });
+  const not_in_path = !process.env.PATH.split(":")
+    .map((p) => path.resolve(p))
+    .includes(path.resolve(installDir));
 
-      const sudoMoveCommand = `mv ${tempFilePath} ${binPath}`;
-      if (!elevatePermissions(sudoMoveCommand)) {
-        throw new Error(
-          `Cannot move file to ${binPath}. Please check your permissions.`
-        );
-      }
-    } else {
-      // If we have permissions, proceed normally
-      fs.mkdirSync(installDir, { recursive: true });
-      fs.writeFileSync(binPath, response.data, { mode: 0o755 });
-    }
+  if (not_in_path) {
+    console.log(
+      chalk.yellow(
+        `⚠️ ${installDir} is not in your $PATH - you'll need to add it to your shell rc`
+      )
+    );
+  }
 
-    console.log(chalk.green(`✅ Installed Bismuth CLI to ${binPath}`));
-
-    if (!argv.noQuickstart) {
-      await quickstart(binPath);
-    }
-  } catch (error: any) {
-    console.error(chalk.red("❌ Installation failed:"), error.message);
-
-    // Provide more detailed error guidance
-    if (error.message.includes("permissions")) {
-      console.log(
-        chalk.yellow(
-          "💡 Tip: Try running the installation with sudo or as an administrator."
-        )
-      );
-    }
+  if (!argv.noQuickstart) {
+    await quickstart(not_in_path ? binPath : undefined);
   }
 }
 
@@ -152,18 +104,20 @@ async function quickstart(cliPath?: string) {
       type: "confirm",
       name: "useSampleProject",
       message:
-        "Would you like to use our sample project to start with? If not, you'll be able to pick any repository on your computer.",
+        "Would you like to first go through a guided tour with a sample project?",
       default: true,
     },
   ]);
 
   let repoPath: string;
   if (useSampleProject) {
-    // Sample Project Walkthrough
+    console.log(
+      "Great! You'll be able to import your own project after this tour."
+    );
+
     console.log("Cloning sample project...");
     const sampleRepoPath = "quickstart-sample";
 
-    // Remove existing sample project if it exists
     if (fs.existsSync(sampleRepoPath)) {
       fs.rmSync(sampleRepoPath, { recursive: true, force: true });
     }
@@ -172,28 +126,15 @@ async function quickstart(cliPath?: string) {
       `git clone --quiet https://github.com/BismuthCloud/quickstart-sample ${sampleRepoPath}`,
       { stdio: "inherit" }
     );
-
-    console.log("");
-    console.log("👉 First, import the repository to Bismuth");
-    const importCmd = cliPath
-      ? `${cliPath} import ${sampleRepoPath}`
-      : `biscli import ${sampleRepoPath}`;
-    console.log(`Running: ${chalk.cyan(importCmd)}`);
-    await pressEnterToContinue();
     console.log("");
 
-    child_process.execSync(importCmd, { stdio: "inherit" });
-
-    repoPath = path.resolve(sampleRepoPath);
-
-    console.log("");
     console.log(
       "👉 In another terminal, let's run the project to see what we're working with."
     );
     console.log(
-      `cd to ${chalk.cyan(sampleRepoPath)} and run ${chalk.cyan(
+      `cd to ${chalk.cyan(sampleRepoPath)}, run ${chalk.cyan(
         "npm i && npm run dev"
-      )} and go to the URL.`
+      )}, and go to the URL.`
     );
     await pressEnterToContinue();
 
@@ -203,13 +144,22 @@ async function quickstart(cliPath?: string) {
     console.log(
       "💡 Fun fact: Bismuth actually created this project from scratch in a single message!"
     );
-    await pressEnterToContinue(
-      "Once you've explored the app, kill the development server and press Enter to continue the guide."
-    );
+    await pressEnterToContinue();
     console.log("");
 
-    console.log("👉 Let's start chatting with Bismuth.");
-    console.log("In your second terminal, open the chat interface:");
+    console.log("👉 First, let's import the repository to Bismuth");
+    const importCmd = cliPath
+      ? `${cliPath} import ${sampleRepoPath}`
+      : `biscli import ${sampleRepoPath}`;
+    console.log(`Running: ${chalk.cyan(importCmd)}`);
+    await pressEnterToContinue();
+    child_process.execSync(importCmd + " --upload", { stdio: "inherit" });
+    console.log("");
+
+    repoPath = path.resolve(sampleRepoPath);
+
+    console.log("👉 Now let's start chatting with Bismuth.");
+    console.log("In another terminal, open the chat interface:");
     const chatCmd = cliPath
       ? `${cliPath} chat --repo "${repoPath}"`
       : `biscli chat --repo "${repoPath}"`;
@@ -221,13 +171,15 @@ async function quickstart(cliPath?: string) {
     );
     console.log(
       chalk.magenta(
-        "Hey Bismuth, I need you to add the ability to set due dates on tasks. If a task is past its due date, it should be highlighted."
+        "Hey Bismuth, I need you to add the ability to set due dates on tasks. The date set on a task should be shown in a smaller font and must be on a new line below the title. If a task is past its due date, the task title should be shown in red. Also make sure the date selection box is the same height as the title input and has the same padding."
       )
     );
     console.log(
       "Bismuth will now plan out how to complete the task, collect relevant information from the repository, and finally begin working."
     );
-    await pressEnterToContinue("Press Enter once Bismuth has finished.");
+    await pressEnterToContinue(
+      "Press Enter once Bismuth is showing you a diff."
+    );
     console.log("");
 
     console.log(
@@ -236,118 +188,105 @@ async function quickstart(cliPath?: string) {
       )} to accept the changes.`
     );
     console.log(
-      `Now, let's check Bismuth's work. Hit ${chalk.yellow(
-        "Esc"
-      )} to exit the chat interface, run ${chalk.cyan(
-        "npm run dev"
-      )} again, and test the new date selection feature.`
+      `Now, let's check Bismuth's work. Go back to the running app, refresh the page, and test the new date selection feature.`
     );
-    console.log(
-      "If there is an issue, just launch the chat again, describe the issue, and ask Bismuth to fix it!"
-    );
-    await pressEnterToContinue(
-      "Once you're done, kill the development server and press Enter to continue."
-    );
+    console.log("If there is an issue, just ask Bismuth to fix it!");
+    await pressEnterToContinue();
     console.log("");
 
-    console.log(
-      "👉 We're now going to have Bismuth fix an intentionally placed bug."
-    );
+    console.log("👉 Now let's have Bismuth fix an intentionally placed bug.");
     console.log(`Open ${chalk.cyan("src/App.tsx")} and delete the`);
     console.log("    saveTasks(updatedTasks);");
     console.log(`line in ${chalk.cyan("handleToggleTask")}.`);
     await pressEnterToContinue();
 
-    console.log("Start the chat again, and send:");
+    console.log("Now tell Bismuth:");
     console.log(
       chalk.magenta(
         "It looks like task toggle state is not saved between page refreshes. Can you fix that?"
       )
     );
-    await pressEnterToContinue("Press Enter once Bismuth has finished.");
+    await pressEnterToContinue(
+      "Press Enter once Bismuth is showing you the diff."
+    );
     console.log("");
 
     console.log(
       `Examine the diff, press ${chalk.yellow(
         "y"
-      )} to accept, and let's check Bismuth's work again.`
-    );
-    console.log(
-      `Run ${chalk.cyan(
-        "npm run dev"
-      )} and make sure toggling a task completed is persisted across refreshes.`
+      )} to accept, and check Bismuth's work again. Go back to the app, refresh, and ensure that marking a task done is persisted between refreshes.`
     );
     await pressEnterToContinue();
     console.log("");
 
-    console.log("👉 Finally, let's delete the project");
+    console.log("👉 Finally, let's clean up the project.");
     const deleteCmd = cliPath
       ? `${cliPath} project delete ${sampleRepoPath}`
       : `biscli project delete ${sampleRepoPath}`;
-    console.log(`Run ${chalk.cyan(deleteCmd)}`);
+    console.log(
+      `Exit the Bismuth chat interface by hitting ${chalk.yellow(
+        "Esc"
+      )}, kill the node development server, and run ${chalk.cyan(
+        deleteCmd
+      )} to delete the project from Bismuth.`
+    );
     await pressEnterToContinue();
     console.log("");
 
     console.log("🚀 And that's it!");
+    console.log("Bismuth can be used on much more than JavaScript frontends.");
     console.log(
-      `You can now import your own project with ${chalk.cyan(
-        "biscli import {path}"
-      )} and begin chatting!`
+      "Use it to refactor Java webservers, write Python backends, or even create utility programs in C."
     );
-    console.log(
-      `💡 Use the '${chalk.cyan(
-        "/help"
-      )}' command in chat for more information, or '${chalk.cyan(
-        "/feedback"
-      )}' to send us feedback or report a bug.`
-    );
+    console.log("Now let's pick one of your projects to work on.");
   } else {
-    // User's Own Project Walkthrough
     console.log("Let's import a project you'd like to work on.");
-
-    const isGitRepo = fs.existsSync(path.join(process.cwd(), ".git"));
-
-    if (isGitRepo) {
-      const { useCurrentDir } = await inquirer.prompt([
-        {
-          type: "confirm",
-          name: "useCurrentDir",
-          message: "Would you like to use the current directory?",
-          default: true,
-        },
-      ]);
-
-      repoPath = useCurrentDir ? process.cwd() : await selectRepository();
-    } else {
-      repoPath = await selectRepository();
-    }
-
-    const importCmd = cliPath
-      ? `${cliPath} import "${repoPath}"`
-      : `biscli import "${repoPath}"`;
-    console.log(chalk.cyan(`Running: ${importCmd}`));
-    await pressEnterToContinue();
-
-    child_process.execSync(importCmd, { stdio: "inherit" });
-
-    console.log(chalk.green("🚀 Now you can start chatting!"));
-
-    console.log(
-      `💡 Use the '${chalk.cyan(
-        "/help"
-      )}' command in chat for more information, or '${chalk.cyan(
-        "/feedback"
-      )}' to send us feedback or report a bug.`
-    );
-
-    const chatCmd = cliPath
-      ? `${cliPath} chat --repo "${repoPath}"`
-      : `biscli chat --repo "${repoPath}"`;
-    console.log(chalk.bold(chalk.cyan(`Running: ${chatCmd}`)));
-    await pressEnterToContinue();
-
-    child_process.execSync(chatCmd, { stdio: "inherit" });
   }
+
+  const isGitRepo = fs.existsSync(path.join(process.cwd(), ".git"));
+
+  if (isGitRepo) {
+    const { useCurrentDir } = await inquirer.prompt([
+      {
+        type: "confirm",
+        name: "useCurrentDir",
+        message: "Would you like to use the current directory?",
+        default: true,
+      },
+    ]);
+
+    repoPath = useCurrentDir ? process.cwd() : await selectRepository();
+  } else {
+    repoPath = await selectRepository();
+  }
+
+  const importCmd = cliPath
+    ? `${cliPath} import "${repoPath}"`
+    : `biscli import "${repoPath}"`;
+  console.log(chalk.cyan(`Running: ${importCmd}`));
+  await pressEnterToContinue();
+
+  child_process.execSync(importCmd, { stdio: "inherit" });
+
+  if (!useSampleProject) {
+    console.log(chalk.green("🚀 Now you can start chatting!"));
+  }
+
+  console.log(
+    `💡 Use the '${chalk.cyan(
+      "/help"
+    )}' command in chat for more information, or '${chalk.cyan(
+      "/feedback"
+    )}' to send us feedback or report a bug.`
+  );
+
+  const chatCmd = cliPath
+    ? `${cliPath} chat --repo "${repoPath}"`
+    : `biscli chat --repo "${repoPath}"`;
+  console.log(chalk.bold(chalk.cyan(`Running: ${chatCmd}`)));
+  await pressEnterToContinue();
+
+  child_process.execSync(chatCmd, { stdio: "inherit" });
 }
 
 async function pressEnterToContinue(
