@@ -86,7 +86,7 @@ async function installCli(argv: any) {
   }
 
   console.log(chalk.green(`✅ Installed Bismuth CLI to ${binPath}`));
-  
+
   if (argv.quickstart) {
       await quickstart(not_in_path ? binPath : undefined);
   }
