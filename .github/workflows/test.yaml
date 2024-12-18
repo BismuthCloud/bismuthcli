@@ -37,4 +37,4 @@ jobs:
           node-version: 'latest'
 
       - name: Test Install
-        run: cd node/bismuthcli && npm run build && npm run start -- install --no-quickstart
+        run: cd node/bismuthcli && npm i && npm run build && npm run start -- install --no-quickstart
