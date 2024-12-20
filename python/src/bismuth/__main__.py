@@ -73,7 +73,7 @@ def install_cli(args):
             "yellow",
         )
 
-    cprint(f"✅ Installed Bismuth CLI to ${binPath}", "green")
+    cprint(f"✅ Installed Bismuth CLI to ${binpath}", "green")
 
     if args.no_quickstart:
         return

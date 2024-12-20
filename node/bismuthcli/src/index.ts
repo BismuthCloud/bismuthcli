@@ -69,7 +69,7 @@ async function installCli(argv: any) {
 
   console.log(chalk.green(`✅ Installed Bismuth CLI to ${binPath}`));
 
-  const not_in_path = !process.env.PATH.split(":")
+  const not_in_path = !(process.env.PATH || "").split(":")
     .map((p) => path.resolve(p))
     .includes(path.resolve(installDir));
 
