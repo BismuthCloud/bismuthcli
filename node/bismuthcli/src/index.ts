@@ -50,11 +50,7 @@ async function installCli(argv: any) {
           .then((r) => r.data.trim())
       : argv.cliVersion;
 
-  const installDir =
-    argv.dir ||
-    (fs.existsSync(path.join(os.homedir(), "bin"))
-      ? path.join(os.homedir(), "bin")
-      : path.join(os.homedir(), ".local/bin"));
+  const installDir = path.resolve(argv.dir);
   const binPath = path.join(installDir, "biscli");
 
   console.log(`Installing Bismuth CLI ${version} to ${installDir}`);
@@ -134,9 +130,9 @@ async function quickstart(cliPath?: string) {
       "👉 In another terminal, let's run the project to see what we're working with."
     );
     console.log(
-      `cd to ${chalk.cyan(sampleRepoPath)}, run ${chalk.cyan(
-        "npm i && npm run dev"
-      )}, and go to the URL.`
+      `Run ${chalk.cyan(
+        `cd ${sampleRepoPath} && npm -i && npm run dev`
+      )} and go to the URL`
     );
     await pressEnterToContinue();
 
@@ -205,7 +201,7 @@ async function quickstart(cliPath?: string) {
     console.log("Now tell Bismuth:");
     console.log(
       chalk.magenta(
-        "It looks like task toggle state is not saved between page refreshes. Can you fix that?"
+        "It looks like task toggle state is not saved between page refreshes. Can you double check the saving logic in App.tsx?"
       )
     );
     await pressEnterToContinue(
@@ -323,16 +319,19 @@ async function selectRepository(): Promise<string> {
   }
 }
 
-const parsed = yargs(hideBin(process.argv))
+yargs(hideBin(process.argv))
   .command(
     "install",
     "Install the Bismuth CLI",
     (yargs) => {
+      const defaultDir = fs.existsSync(path.join(os.homedir(), "bin"))
+        ? path.join(os.homedir(), "bin")
+        : path.join(os.homedir(), ".local/bin");
       return yargs
         .option("dir", {
           type: "string",
           description: "Directory to install the CLI",
-          default: "/usr/local/bin/",
+          default: defaultDir,
         })
         .option("cli-version", {
           type: "string",

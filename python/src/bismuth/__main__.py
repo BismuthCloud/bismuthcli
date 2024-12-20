@@ -281,11 +281,15 @@ if __name__ == "__main__":
     parser_install_cli = subparsers.add_parser(
         "install-cli", help="Install the Bismuth Cloud CLI"
     )
+    if pathlib.Path("~/bin").expanduser().is_dir():
+        default_install_dir = "~/bin"
+    else:
+        default_install_dir = "~/.local/bin"
     parser_install_cli.add_argument(
         "--dir",
         type=pathlib.Path,
         help="Directory to install the CLI",
-        default="/usr/local/bin/",
+        default=default_install_dir,
     )
     parser_install_cli.add_argument(
         "--version", type=str, help="Version to install", default="LATEST"
