@@ -27,26 +27,8 @@ jobs:
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-  update-versions:
-    needs: [validate-version]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Update Python version
-        run: |
-          echo "__version__ = \"${{ needs.validate-version.outputs.version }}\"" > python/src/bismuth/__init__.py
-          cat python/src/bismuth/__init__.py
-
-      - name: Update Node.js version
-        run: |
-          cd node/bismuthcli
-          npm version ${{ needs.validate-version.outputs.version }} --no-git-tag-version
-          cat package.json
-
   publish-python:
-    needs: [validate-version, update-versions]
+    needs: [validate-version]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -56,6 +38,11 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
+
+      - name: Update Python version
+        run: |
+          echo "__version__ = \"${{ needs.validate-version.outputs.version }}\"" > python/src/bismuth/__init__.py
+          cat python/src/bismuth/__init__.py
 
       - name: Install deps
         run: pip install hatch
@@ -75,7 +62,7 @@ jobs:
           packages-dir: python/dist
 
   publish-node:
-    needs: [validate-version, update-versions]
+    needs: [validate-version]
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -90,6 +77,12 @@ jobs:
           node-version: '18'
           registry-url: 'https://registry.npmjs.org'
 
+      - name: Update Node.js version
+        run: |
+          cd node/bismuthcli
+          npm version ${{ needs.validate-version.outputs.version }} --no-git-tag-version
+          cat package.json
+
       - name: Install dependencies
         run: npm ci
 
@@ -99,4 +92,4 @@ jobs:
       - name: Publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --provenance
+        run: npm publish
