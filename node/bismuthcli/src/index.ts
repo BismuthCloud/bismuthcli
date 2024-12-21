@@ -67,8 +67,6 @@ async function installCli(argv: any) {
   fs.mkdirSync(installDir, { recursive: true });
   fs.writeFileSync(binPath, response.data, { mode: 0o755 });
 
-  console.log(chalk.green(`✅ Installed Bismuth CLI to ${binPath}`));
-
   const not_in_path = !(process.env.PATH || "").split(":")
     .map((p) => path.resolve(p))
     .includes(path.resolve(installDir));
@@ -159,8 +157,8 @@ async function quickstart(cliPath?: string) {
     console.log("👉 Now let's start chatting with Bismuth.");
     console.log("In another terminal, open the chat interface:");
     const chatCmd = cliPath
-      ? `${cliPath} chat --repo "${repoPath}"`
-      : `biscli chat --repo "${repoPath}"`;
+      ? `${cliPath} chat --repo '${repoPath}'`
+      : `biscli chat --repo '${repoPath}'`;
     console.log(chalk.cyan(chatCmd));
     await pressEnterToContinue();
 
@@ -195,7 +193,7 @@ async function quickstart(cliPath?: string) {
     console.log("👉 Now let's have Bismuth fix an intentionally placed bug.");
     console.log(`Open ${chalk.cyan("src/App.tsx")} and delete the`);
     console.log("    saveTasks(updatedTasks);");
-    console.log(`line in ${chalk.cyan("handleToggleTask")}.`);
+    console.log(`line in ${chalk.cyan("handleToggleTask")} (around line 27).`);
     await pressEnterToContinue();
 
     console.log("Now tell Bismuth:");
@@ -261,8 +259,7 @@ async function quickstart(cliPath?: string) {
   const importCmd = cliPath
     ? `${cliPath} import "${repoPath}"`
     : `biscli import "${repoPath}"`;
-  console.log(chalk.cyan(`Running: ${importCmd}`));
-  await pressEnterToContinue();
+  console.log(`Running: ${chalk.cyan(importCmd)}`);
 
   child_process.execSync(importCmd, { stdio: "inherit" });
 
@@ -271,9 +268,9 @@ async function quickstart(cliPath?: string) {
   }
 
   console.log(
-    `💡 Use the '${chalk.cyan(
+    `💡 Use the '${chalk.magenta(
       "/help"
-    )}' command in chat for more information, or '${chalk.cyan(
+    )}' command in chat for more information, or '${chalk.magenta(
       "/feedback"
     )}' to send us feedback or report a bug.`
   );
@@ -281,7 +278,7 @@ async function quickstart(cliPath?: string) {
   const chatCmd = cliPath
     ? `${cliPath} chat --repo "${repoPath}"`
     : `biscli chat --repo "${repoPath}"`;
-  console.log(chalk.bold(chalk.cyan(`Running: ${chatCmd}`)));
+  console.log(`Running: ${chalk.cyan(chatCmd)}`);
   await pressEnterToContinue();
 
   child_process.execSync(chatCmd, { stdio: "inherit" });

@@ -51,7 +51,8 @@ def install_cli(args):
     cprint(LOGO, "light_magenta")
     print()
     print(f"Installing Bismuth CLI {args.version} to {args.dir}")
-    pathlib.Path(args.dir).mkdir(parents=True, exist_ok=True)
+    args.dir = pathlib.Path(args.dir).expanduser()
+    args.dir.mkdir(parents=True, exist_ok=True)
     binpath = args.dir / "biscli"
     with requests.get(
         f"https://github.com/BismuthCloud/cli/releases/download/v{args.version}/bismuthcli.{triple}",
@@ -73,7 +74,7 @@ def install_cli(args):
             "yellow",
         )
 
-    cprint(f"✅ Installed Bismuth CLI to ${binpath}", "green")
+    cprint(f"✅ Installed Bismuth CLI to {binpath}", "green")
 
     if args.no_quickstart:
         return
@@ -88,10 +89,15 @@ def install_cli(args):
         if not_in_path:
             cmd += " --cli " + str(binpath)
 
-        cprint(
-            f"Please open a terminal in your IDE of choice and run {cmd} to launch the quickstart.",
-            "light_blue",
-            attrs=["bold"],
+        print(
+            colored(
+                "Please open a terminal in your IDE of choice and run ", "light_blue"
+            )
+            + colored(cmd, "light_blue", attrs=["bold"])
+            + colored(
+                " to launch the quickstart.",
+                "light_blue",
+            )
         )
         return
 
@@ -157,13 +163,13 @@ def quickstart(args):
 
         print("👉 Let's start chatting with Bismuth.")
         print("In another terminal, open the chat interface:")
-        cprint(f"biscli chat --repo {fullpath}", "light_blue")
+        cprint(f"biscli chat --repo '{fullpath}'", "light_blue")
         input("Press [Enter] to continue.")
 
         print("We're first going to ask Bismuth to add a feature. Send this message:")
         cprint(
-            "Hey Bismuth, I need you to add the ability to set due dates on tasks. The date set on a task should be shown in a smaller font and must be on a new line below the title. If a task is past its due date, the task title should be shown in red. Also make sure the date selection box is the same height as the title input and has the same padding."
-            "magenta",
+            "Hey Bismuth, I need you to add the ability to set due dates on tasks. The date set on a task should be shown in a smaller font and must be on a new line below the title. If a task is past its due date, the task title should be shown in red. Also make sure the date selection box is the same height as the title input and has the same padding.",
+            "light_magenta",
         )
         print(
             "Bismuth will now plan out how to complete the task, collect relevant information from the repository, and finally begin working."
@@ -184,13 +190,13 @@ def quickstart(args):
         print("👉 Now let's have Bismuth fix an intentionally placed bug.")
         print(f"Open {colored('src/App.tsx', 'light_blue')} and delete the")
         print("    saveTasks(updatedTasks);")
-        print(f"line in {colored('handleToggleTask', 'light_blue')}.")
+        print(f"line in {colored('handleToggleTask', 'light_blue')} (around line 27).")
         input("Press [Enter] to continue.")
 
         print("Now tell Bismuth:")
         cprint(
-            "It looks like task toggle state is not saved between page refreshes. Can you double check the saving logic in App.tsx?"
-            "magenta",
+            "It looks like task toggle state is not saved between page refreshes. Can you double check the saving logic in App.tsx?",
+            "light_magenta",
         )
         input("Press [Enter] once Bismuth is showing you the diff.")
         print("")
@@ -212,6 +218,7 @@ def quickstart(args):
         print("")
 
         print("🚀 And that's it!")
+        print("")
         print("Bismuth can be used on much more than JavaScript frontends.")
         print(
             "Use it to refactor Java webservers, write Python backends, or even create utility programs in C."
@@ -237,14 +244,14 @@ def quickstart(args):
                 continue
             break
     repo = str(repo.absolute())
-    show_cmd(f"biscli import {repo}")
+    show_cmd(f"biscli import {repo}", confirm=False)
     subprocess.run([args.cli, "import", repo])
 
     if not use_sample:
         cprint("🚀 Now you can start chatting!", "green")
 
     print(
-        f"💡 Use the `{colored('/help', 'light_blue')}` command in chat for more information, or `{colored('/feedback', 'light_blue')}` to send us feedback or report a bug."
+        f"💡 Use the `{colored('/help', 'light_magenta')}` command in chat for more information, or `{colored('/feedback', 'light_magenta')}` to send us feedback or report a bug."
     )
     if repo == str(pathlib.Path(".").absolute()):
         show_cmd("biscli chat")
@@ -284,7 +291,7 @@ if __name__ == "__main__":
         "--cli",
         type=pathlib.Path,
         help="Path to installed Bismuth CLI",
-        default="/usr/local/bin/biscli",
+        default="biscli",
     )
     parser_quickstart.set_defaults(func=quickstart)
 
