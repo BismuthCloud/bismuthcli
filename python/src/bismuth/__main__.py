@@ -90,14 +90,9 @@ def install_cli(args):
             cmd += " --cli " + str(binpath)
 
         print(
-            colored(
-                "Please open a terminal in your IDE of choice and run ", "light_blue"
-            )
-            + colored(cmd, "light_blue", attrs=["bold"])
-            + colored(
-                " to launch the quickstart.",
-                "light_blue",
-            )
+            "Please open a terminal in your IDE of choice and run",
+            colored(cmd, "light_blue"),
+            "to launch the quickstart.",
         )
         return
 
@@ -133,13 +128,12 @@ def quickstart(args):
         subprocess.run([args.cli, "billing", "refill"])
 
     use_sample = input(
-        "💭 Would you like to first go through a guided tour with a sample project? [Y/n]"
+        "💭 Would you like to first go through a guided tour with a sample project (this will use about 50 credits - $0.50)? [Y/n]"
     ).lower() in ("y", "")
     if use_sample:
         print("Great! You'll be able to import your own project after this tour.")
-        print("This tutorial will use about 50 credits ($0.50).")
 
-        if shutil.which("npm") is None:
+        if shutil.which("node") is None or shutil.which("npm") is None:
             print("You'll need Node.js installed to run the sample project.")
             if input("Would you like me to install it for you? [Y/n] ").lower() in (
                 "y",
@@ -182,12 +176,11 @@ def quickstart(args):
         print(
             "💡 Fun fact: Bismuth actually created this project from scratch in a single message!"
         )
-        input("Press [Enter] to continue.")
         print()
 
-        print("👉 Now, let's import the repository to Bismuth")
-        show_cmd(f"biscli import {repo}")
-        subprocess.run([args.cli, "import", repo, "--upload"])
+        print("👉 Now, let's import the repository to Bismuth.")
+        print(f"Run {colored(f'biscli import {repo} --upload', 'light_blue')}")
+        input("Press [Enter] to continue.")
         print("")
 
         fullpath = str(pathlib.Path(repo).resolve())

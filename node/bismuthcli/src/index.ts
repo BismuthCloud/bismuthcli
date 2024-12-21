@@ -119,7 +119,7 @@ async function quickstart(cliPath?: string) {
       type: "confirm",
       name: "useSampleProject",
       message:
-        "Would you like to first go through a guided tour with a sample project?",
+        "Would you like to first go through a guided tour with a sample project (this will use about 50 credits - $0.50)?",
       default: true,
     },
   ]);
@@ -129,7 +129,6 @@ async function quickstart(cliPath?: string) {
     console.log(
       "Great! You'll be able to import your own project after this tour."
     );
-    console.log("This tutorial will use about 50 credits ($0.50).");
 
     console.log("Cloning sample project...");
     const sampleRepoPath = "quickstart-sample";
@@ -160,16 +159,14 @@ async function quickstart(cliPath?: string) {
     console.log(
       "💡 Fun fact: Bismuth actually created this project from scratch in a single message!"
     );
-    await pressEnterToContinue();
     console.log("");
 
-    console.log("👉 First, let's import the repository to Bismuth");
+    console.log("👉 Now, let's import the repository to Bismuth.");
     const importCmd = cliPath
-      ? `${cliPath} import ${sampleRepoPath}`
-      : `biscli import ${sampleRepoPath}`;
-    console.log(`Running: ${chalk.cyan(importCmd)}`);
+      ? `${cliPath} import ${sampleRepoPath} --upload`
+      : `biscli import ${sampleRepoPath} --upload`;
+    console.log(`Run ${chalk.cyan(importCmd)}`);
     await pressEnterToContinue();
-    child_process.execSync(importCmd + " --upload", { stdio: "inherit" });
     console.log("");
 
     repoPath = path.resolve(sampleRepoPath);
