@@ -139,6 +139,23 @@ def quickstart(args):
         print("Great! You'll be able to import your own project after this tour.")
         print("This tutorial will use about 50 credits ($0.50).")
 
+        if shutil.which("npm") is None:
+            print("You'll need Node.js installed to run the sample project.")
+            if input("Would you like me to install it for you? [Y/n] ").lower() in (
+                "y",
+                "",
+            ):
+                subprocess.run(
+                    "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash",
+                    shell=True,
+                )
+                subprocess.run(["bash", "-ic", "nvm install node"])
+            else:
+                print(
+                    f"Please install Node.js manually and restart the quickstart with {colored('python -m bismuth quickstart', 'light_blue')}."
+                )
+                return
+
         print("Cloning sample project...")
         if os.path.exists("quickstart-sample"):
             shutil.rmtree("quickstart-sample")
