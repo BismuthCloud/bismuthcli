@@ -67,7 +67,8 @@ async function installCli(argv: any) {
   fs.mkdirSync(installDir, { recursive: true });
   fs.writeFileSync(binPath, response.data, { mode: 0o755 });
 
-  const not_in_path = !(process.env.PATH || "").split(":")
+  const not_in_path = !(process.env.PATH || "")
+    .split(":")
     .map((p) => path.resolve(p))
     .includes(path.resolve(installDir));
 
@@ -93,8 +94,26 @@ async function quickstart(cliPath?: string) {
   console.log(`Running: ${chalk.cyan(loginCmd)}`);
 
   child_process.execSync(loginCmd, { stdio: "inherit" });
-
   console.log("");
+
+  let creds = 0;
+  try {
+    const creditsCmd = cliPath
+      ? `${cliPath} billing credits-remaining`
+      : "biscli billing credits-remaining";
+    creds = parseInt(child_process.execSync(creditsCmd).toString().trim());
+  } catch (error) {}
+
+  if (creds === 0) {
+    console.log("You'll need to purchase credits to use Bismuth.");
+    const refillCmd = cliPath
+      ? `${cliPath} billing refill`
+      : "biscli billing refill";
+    await pressEnterToContinue("Press Enter to open the purchase page.");
+    console.log(`Running: ${chalk.cyan(refillCmd)}`);
+    child_process.execSync(refillCmd, { stdio: "inherit" });
+  }
+
   const { useSampleProject } = await inquirer.prompt([
     {
       type: "confirm",
@@ -110,6 +129,7 @@ async function quickstart(cliPath?: string) {
     console.log(
       "Great! You'll be able to import your own project after this tour."
     );
+    console.log("This tutorial will use about 50 credits ($0.50).");
 
     console.log("Cloning sample project...");
     const sampleRepoPath = "quickstart-sample";

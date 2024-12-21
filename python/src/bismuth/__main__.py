@@ -120,11 +120,25 @@ def quickstart(args):
 
     print("")
 
+    try:
+        creds = int(
+            subprocess.check_output([args.cli, "billing", "credits-remaining"]).strip()
+        )
+    except (subprocess.CalledProcessError, ValueError):
+        creds = 0
+
+    if creds == 0:
+        print("You'll need to purchase credits to use Bismuth.")
+        show_cmd("biscli billing refill")
+        subprocess.run([args.cli, "billing", "refill"])
+
     use_sample = input(
         "💭 Would you like to first go through a guided tour with a sample project? [Y/n]"
     ).lower() in ("y", "")
     if use_sample:
         print("Great! You'll be able to import your own project after this tour.")
+        print("This tutorial will use about 50 credits ($0.50).")
+
         print("Cloning sample project...")
         if os.path.exists("quickstart-sample"):
             shutil.rmtree("quickstart-sample")
