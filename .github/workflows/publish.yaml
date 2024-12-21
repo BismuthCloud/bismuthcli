@@ -79,7 +79,6 @@ jobs:
 
       - name: Update Node.js version
         run: |
-          cd node/bismuthcli
           npm version ${{ needs.validate-version.outputs.version }} --no-git-tag-version
           cat package.json
 
