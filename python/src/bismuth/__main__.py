@@ -51,7 +51,9 @@ def install_cli(args):
     cprint(LOGO, "light_magenta")
     print()
     print(f"Installing Bismuth CLI {args.version} to {args.dir}")
-    tempfn = tempfile.mktemp()
+    args.dir = pathlib.Path(args.dir).expanduser()
+    args.dir.mkdir(parents=True, exist_ok=True)
+    binpath = args.dir / "biscli"
     with requests.get(
         f"https://github.com/BismuthCloud/cli/releases/download/v{args.version}/bismuthcli.{triple}",
         allow_redirects=True,
@@ -60,34 +62,9 @@ def install_cli(args):
         if not resp.ok:
             cprint(f"{ERROR}Binary not found (no such version?)", "red")
             return
-        with open(tempfn, "wb") as tempf:
-            shutil.copyfileobj(resp.raw, tempf)
-
-    binpath = args.dir / "biscli"
-
-    try:
-        os.replace(tempfn, binpath)
-        os.chmod(binpath, 0o755)
-    except OSError:
-        print(
-            f"Unable to install to {binpath}, requesting 'sudo' to install and chmod..."
-        )
-        cmd = [
-            "sudo",
-            "mv",
-            tempfn,
-            str(binpath),
-        ]
-        print(f"Running {cmd}")
-        subprocess.run(cmd)
-        cmd = [
-            "sudo",
-            "chmod",
-            "775",
-            str(binpath),
-        ]
-        print(f"Running {cmd}")
-        subprocess.run(cmd)
+        with open(binpath, "wb") as binf:
+            shutil.copyfileobj(resp.raw, binf)
+    os.chmod(binpath, 0o755)
 
     not_in_path = False
     if args.dir not in [pathlib.Path(p) for p in os.environ["PATH"].split(":")]:
@@ -96,6 +73,8 @@ def install_cli(args):
             f"{WARNING}{args.dir} is not in your $PATH - you'll need to add it to your shell rc",
             "yellow",
         )
+
+    cprint(f"✅ Installed Bismuth CLI to {binpath}", "green")
 
     if args.no_quickstart:
         return
@@ -110,10 +89,15 @@ def install_cli(args):
         if not_in_path:
             cmd += " --cli " + str(binpath)
 
-        cprint(
-            f"Please open a terminal in your IDE of choice and run {cmd} to launch the quickstart.",
-            "light_blue",
-            attrs=["bold"],
+        print(
+            colored(
+                "Please open a terminal in your IDE of choice and run ", "light_blue"
+            )
+            + colored(cmd, "light_blue", attrs=["bold"])
+            + colored(
+                " to launch the quickstart.",
+                "light_blue",
+            )
         )
         return
 
@@ -135,10 +119,12 @@ def quickstart(args):
     subprocess.run([args.cli, "login"])
 
     print("")
-    print("💭 Would you like to use our sample project to start with?")
-    if input(
-        "If not, you'll be able to pick any repository on your computer. [Y/n] "
-    ).lower() in ("y", ""):
+
+    use_sample = input(
+        "💭 Would you like to first go through a guided tour with a sample project? [Y/n]"
+    ).lower() in ("y", "")
+    if use_sample:
+        print("Great! You'll be able to import your own project after this tour.")
         print("Cloning sample project...")
         if os.path.exists("quickstart-sample"):
             shutil.rmtree("quickstart-sample")
@@ -153,18 +139,11 @@ def quickstart(args):
         print("")
 
         repo = "quickstart-sample"
-        print("👉 First, import the repository to Bismuth")
-        show_cmd(f"biscli import {repo}")
-        subprocess.run([args.cli, "import", repo])
-        print("")
-
-        fullpath = str(pathlib.Path(repo).resolve())
-
         print(
             "👉 In another terminal, let's run the project to see what we're working with."
         )
         print(
-            f"cd to {colored(fullpath, 'light_blue')} and run {colored('npm i && npm run dev', 'light_blue')} and go to the URL."
+            f"Run {colored(f'cd {repo} && npm i && npm run dev', 'light_blue')} and go to the URL."
         )
         input("Press [Enter] to continue.")
 
@@ -172,107 +151,113 @@ def quickstart(args):
         print(
             "💡 Fun fact: Bismuth actually created this project from scratch in a single message!"
         )
-        input(
-            "Once you've explored the app, kill the development server and press [Enter] to continue the guide."
-        )
+        input("Press [Enter] to continue.")
+        print()
+
+        print("👉 Now, let's import the repository to Bismuth")
+        show_cmd(f"biscli import {repo}")
+        subprocess.run([args.cli, "import", repo, "--upload"])
         print("")
 
+        fullpath = str(pathlib.Path(repo).resolve())
+
         print("👉 Let's start chatting with Bismuth.")
-        print("In your second terminal, open the chat interface:")
-        cprint(f"biscli chat --repo {fullpath}", "light_blue", attrs=["bold"])
+        print("In another terminal, open the chat interface:")
+        cprint(f"biscli chat --repo '{fullpath}'", "light_blue")
         input("Press [Enter] to continue.")
 
         print("We're first going to ask Bismuth to add a feature. Send this message:")
         cprint(
-            "Hey Bismuth, I need you to add the ability to set due dates on tasks. If a task is past its due date, it should be highlighted.",
-            "magenta",
+            "Hey Bismuth, I need you to add the ability to set due dates on tasks. The date set on a task should be shown in a smaller font and must be on a new line below the title. If a task is past its due date, the task title should be shown in red. Also make sure the date selection box is the same height as the title input and has the same padding.",
+            "light_magenta",
         )
         print(
             "Bismuth will now plan out how to complete the task, collect relevant information from the repository, and finally begin working."
         )
-        input("Press [Enter] once Bismuth has finished.")
+        input("Press [Enter] once Bismuth is showing you a diff.")
         print("")
 
         print(
             f"👉 Bismuth is now showing you the diff of the code it wrote. Press {colored('y', 'yellow')} to accept the changes."
         )
         print(
-            f"Now, let's check Bismuth's work. Hit {colored('Esc', 'yellow')} to exit the chat interface, run {colored('npm run dev', 'light_blue')} again, and test the new date selection feature."
+            "Now, let's check Bismuth's work. Go back to the running app, refresh the page, and test the new date selection feature."
         )
-        print(
-            "If there is an issue, just launch the chat again, describe the issue, and ask Bismuth to fix it!"
-        )
-        input(
-            "Once you're done, kill the development server and press [Enter] to continue."
-        )
+        print("If there is an issue, just ask Bismuth to fix it!")
+        input("Press [Enter] to continue.")
         print("")
 
-        print("👉 We're now going to have Bismuth fix an intentionally placed bug.")
+        print("👉 Now let's have Bismuth fix an intentionally placed bug.")
         print(f"Open {colored('src/App.tsx', 'light_blue')} and delete the")
         print("    saveTasks(updatedTasks);")
-        print(f"line in {colored('handleToggleTask', 'light_blue')}.")
+        print(f"line in {colored('handleToggleTask', 'light_blue')} (around line 27).")
         input("Press [Enter] to continue.")
 
-        print("Start the chat again, and send:")
+        print("Now tell Bismuth:")
         cprint(
-            "It looks like task toggle state is not saved between page refreshes. Can you fix that?",
-            "magenta",
+            "It looks like task toggle state is not saved between page refreshes. Can you double check the saving logic in App.tsx?",
+            "light_magenta",
         )
-        input("Press [Enter] once Bismuth has finished.")
+        input("Press [Enter] once Bismuth is showing you the diff.")
         print("")
 
         print(
-            f"Examine the diff, press {colored('y', 'yellow')} to accept, and let's check Bismuth's work again."
+            f"Examine the diff, press {colored('y', 'yellow')} to accept, and check Bismuth's work again."
         )
         print(
-            f"Run {colored('npm run dev', 'light_blue')} and make sure toggling a task completed is persisted across refreshes."
+            "Go back to the app, refresh, and ensure that marking a task done is persisted between refreshes."
         )
         input("Press [Enter] to continue.")
         print("")
 
-        print("👉 Finally, let's delete the project")
-        print(f"Run {colored(f'biscli project delete {repo}', 'light_blue')}")
+        print("👉 Finally, let's clean up the project")
+        print(
+            f"Exit the Bismuth chat interface by hitting {colored('Esc', 'yellow')}, kill the node development server, and run {colored(f'biscli project delete {repo}', 'light_blue')} to delete the project from Bismuth."
+        )
         input("Press [Enter] to continue.")
         print("")
 
         print("🚀 And that's it!")
+        print("")
+        print("Bismuth can be used on much more than JavaScript frontends.")
         print(
-            f"You can now import your own project with {colored('biscli import {path}', 'light_blue')} and begin chatting!"
+            "Use it to refactor Java webservers, write Python backends, or even create utility programs in C."
         )
-        print(
-            f"💡 Use the `{colored('/help', 'light_blue')}` command in chat for more information, or `{colored('/feedback', 'light_blue')}` to send us feedback or report a bug."
-        )
+        print("Now let's pick one of your projects to work on.")
     else:
         print("Let's import a project you'd like to work on.")
-        if pathlib.Path("./.git").is_dir() and input(
-            "Would you like to use the currect directory? [Y/n] "
-        ).lower() in ("y", ""):
-            repo = pathlib.Path(".")
-        else:
-            while True:
-                repo = pathlib.Path(
-                    prompt(
-                        "Path to repository: ",
-                        completer=PathCompleter(only_directories=True),
-                    )
-                )
-                if not (repo / ".git").is_dir():
-                    print("Not a git repository")
-                    continue
-                break
-        repo = str(repo.absolute())
-        show_cmd(f"biscli import {repo}")
-        subprocess.run([args.cli, "import", repo])
 
+    if pathlib.Path("./.git").is_dir() and input(
+        "Would you like to use the currect directory? [Y/n] "
+    ).lower() in ("y", ""):
+        repo = pathlib.Path(".")
+    else:
+        while True:
+            repo = pathlib.Path(
+                prompt(
+                    "Path to repository: ",
+                    completer=PathCompleter(only_directories=True),
+                )
+            )
+            if not (repo / ".git").is_dir():
+                print("Not a git repository")
+                continue
+            break
+    repo = str(repo.absolute())
+    show_cmd(f"biscli import {repo}", confirm=False)
+    subprocess.run([args.cli, "import", repo])
+
+    if not use_sample:
         cprint("🚀 Now you can start chatting!", "green")
-        print(
-            f"💡 Use the `{colored('/help', 'light_blue')}` command in chat for more information, or `{colored('/feedback', 'light_blue')}` to send us feedback or report a bug."
-        )
-        if repo == str(pathlib.Path(".").absolute()):
-            show_cmd("biscli chat")
-        else:
-            show_cmd(f"biscli chat --repo {repo}")
-        subprocess.run([args.cli, "chat", "--repo", repo])
+
+    print(
+        f"💡 Use the `{colored('/help', 'light_magenta')}` command in chat for more information, or `{colored('/feedback', 'light_magenta')}` to send us feedback or report a bug."
+    )
+    if repo == str(pathlib.Path(".").absolute()):
+        show_cmd("biscli chat")
+    else:
+        show_cmd(f"biscli chat --repo {repo}")
+    subprocess.run([args.cli, "chat", "--repo", repo])
 
 
 if __name__ == "__main__":
@@ -281,11 +266,15 @@ if __name__ == "__main__":
     parser_install_cli = subparsers.add_parser(
         "install-cli", help="Install the Bismuth Cloud CLI"
     )
+    if pathlib.Path("~/bin").expanduser().is_dir():
+        default_install_dir = "~/bin"
+    else:
+        default_install_dir = "~/.local/bin"
     parser_install_cli.add_argument(
         "--dir",
         type=pathlib.Path,
         help="Directory to install the CLI",
-        default="/usr/local/bin/",
+        default=default_install_dir,
     )
     parser_install_cli.add_argument(
         "--version", type=str, help="Version to install", default="LATEST"
@@ -302,7 +291,7 @@ if __name__ == "__main__":
         "--cli",
         type=pathlib.Path,
         help="Path to installed Bismuth CLI",
-        default="/usr/local/bin/biscli",
+        default="biscli",
     )
     parser_quickstart.set_defaults(func=quickstart)
 
