@@ -76,15 +76,15 @@ async function installCli(argv: any) {
 
   if (not_in_path) {
     let rcfile = null;
-    const shell = process.env.SHELL || '';
-    
-    if (shell.includes('zsh')) {
+    const shell = process.env.SHELL || "";
+
+    if (shell.includes("zsh")) {
       if (fs.existsSync(path.join(os.homedir(), ".zshrc"))) {
         rcfile = path.join(os.homedir(), ".zshrc");
       } else if (fs.existsSync(path.join(os.homedir(), ".zprofile"))) {
         rcfile = path.join(os.homedir(), ".zprofile");
       }
-    } else if (shell.includes('bash')) {
+    } else if (shell.includes("bash")) {
       if (fs.existsSync(path.join(os.homedir(), ".bashrc"))) {
         rcfile = path.join(os.homedir(), ".bashrc");
       } else if (fs.existsSync(path.join(os.homedir(), ".bash_profile"))) {
@@ -95,12 +95,10 @@ async function installCli(argv: any) {
     if (rcfile) {
       fs.appendFileSync(rcfile, `\nexport PATH="${installDir}:$PATH"\n`);
       process.env.PATH = `${installDir}:${process.env.PATH}`;
+      console.log(chalk.green(`✅ Updated $PATH in ${rcfile}`));
       console.log(
-        chalk.green(
-          `✅ Updated $PATH in ${rcfile}`
-        )
+        "👉 You'll need to close and reopen any existing terminals to use 'biscli' in them."
       );
-      console.log("👉 You'll need to close and reopen any existing terminals to use 'biscli' in them.")
     } else {
       console.log(
         chalk.yellow(
@@ -386,7 +384,7 @@ yargs(hideBin(process.argv))
   )
   .command(
     "quickstart",
-    "See how to use the Bismuth CLI", 
+    "See how to use the Bismuth CLI",
     (yargs) => {
       return yargs
         .option("cli", {
