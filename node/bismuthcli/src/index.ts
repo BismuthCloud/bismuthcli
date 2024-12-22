@@ -119,7 +119,7 @@ async function quickstart(cliPath?: string) {
       type: "confirm",
       name: "useSampleProject",
       message:
-        "Would you like to first go through a guided tour with a sample project (this will use about 50 credits - $0.50)?",
+        "Would you like to first go through a guided tour with a sample project (this will use about 50 credits of your initial 100 credits)?",
       default: true,
     },
   ]);

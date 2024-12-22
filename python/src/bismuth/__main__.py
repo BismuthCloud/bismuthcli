@@ -128,12 +128,19 @@ def quickstart(args):
         subprocess.run([args.cli, "billing", "refill"])
 
     use_sample = input(
-        "💭 Would you like to first go through a guided tour with a sample project (this will use about 50 credits - $0.50)? [Y/n]"
+        "💭 Would you like to first go through a guided tour with a sample project (this will use about 50 credits of your initial 100 credits)? [Y/n]"
     ).lower() in ("y", "")
     if use_sample:
         print("Great! You'll be able to import your own project after this tour.")
 
-        if shutil.which("node") is None or shutil.which("npm") is None:
+        if (
+            shutil.which("node") is None
+            or shutil.which("npm") is None
+            or subprocess.run(["node", "--version"], stdout=subprocess.PIPE)
+            .stdout.decode("utf-8")
+            .strip()
+            < "v18.0.0"
+        ):
             print("You'll need Node.js installed to run the sample project.")
             if input("Would you like me to install it for you? [Y/n] ").lower() in (
                 "y",
@@ -143,7 +150,9 @@ def quickstart(args):
                     "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash",
                     shell=True,
                 )
-                subprocess.run(["bash", "-ic", "nvm install node"])
+                subprocess.run(
+                    [os.environ.get("SHELL", "bash"), "-ic", "nvm install node"]
+                )
             else:
                 print(
                     f"Please install Node.js manually and restart the quickstart with {colored('python -m bismuth quickstart', 'light_blue')}."
