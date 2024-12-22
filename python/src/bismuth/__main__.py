@@ -5,7 +5,6 @@ import platform
 import requests
 import subprocess
 import shutil
-import tempfile
 from termcolor import colored, cprint
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import PathCompleter
@@ -19,7 +18,7 @@ LOGO = r"""
 """
 
 ERROR = "❌ " if os.environ.get("TERM") == "xterm-256color" else ""
-WARNING = "⚠️ " if os.environ.get("TERM") == "xterm-256color" else ""
+WARNING = "⚠️  " if os.environ.get("TERM") == "xterm-256color" else ""
 
 
 def install_cli(args):
@@ -69,12 +68,37 @@ def install_cli(args):
     not_in_path = False
     if args.dir not in [pathlib.Path(p) for p in os.environ["PATH"].split(":")]:
         not_in_path = True
-        cprint(
-            f"{WARNING}{args.dir} is not in your $PATH - you'll need to add it to your shell rc",
-            "yellow",
-        )
 
     cprint(f"✅ Installed Bismuth CLI to {binpath}", "green")
+
+    if not_in_path:
+        rcfile = None
+        if "zsh" in os.environ.get("SHELL", ""):
+            if pathlib.Path("~/.zshrc").expanduser().exists():
+                rcfile = "~/.zshrc"
+            elif pathlib.Path("~/.zprofile").expanduser().exists():
+                rcfile = "~/.zprofile"
+        elif "bash" in os.environ.get("SHELL", ""):
+            if pathlib.Path("~/.bashrc").expanduser().exists():
+                rcfile = "~/.bashrc"
+            elif pathlib.Path("~/.bash_profile").expanduser().exists():
+                rcfile = "~/.bash_profile"
+        if rcfile:
+            with open(pathlib.Path(rcfile).expanduser(), "a") as rc:
+                rc.write(f'\nexport PATH="{args.dir}:$PATH"\n')
+            os.environ["PATH"] = f"{args.dir}:{os.environ['PATH']}"
+            cprint(
+                f"✅ Updated $PATH in {rcfile}",
+                "green",
+            )
+            print(
+                "👉 You'll need to close and reopen any existing terminals to use `biscli` in them."
+            )
+        else:
+            cprint(
+                f"{WARNING}{args.dir} is not in your $PATH - you'll need to add it to your shell rc.",
+                "yellow",
+            )
 
     if args.no_quickstart:
         return
@@ -107,25 +131,28 @@ def show_cmd(cmd, confirm=True):
 
 
 def quickstart(args):
-    print("First, let's log you in to the Bismuth platform.")
-    show_cmd(
-        "biscli login", confirm=False
-    )  # this already does another "press any key to open"
-    subprocess.run([args.cli, "login"])
+    if not args.no_login:
+        print("First, let's log you in to the Bismuth platform.")
+        show_cmd(
+            "biscli login", confirm=False
+        )  # this already does another "press any key to open"
+        subprocess.run([args.cli, "login"])
 
-    print("")
+        print("")
 
-    try:
-        creds = int(
-            subprocess.check_output([args.cli, "billing", "credits-remaining"]).strip()
-        )
-    except (subprocess.CalledProcessError, ValueError):
-        creds = 0
+        try:
+            creds = int(
+                subprocess.check_output(
+                    [args.cli, "billing", "credits-remaining"]
+                ).strip()
+            )
+        except (subprocess.CalledProcessError, ValueError):
+            creds = 0
 
-    if creds == 0:
-        print("You'll need to purchase credits to use Bismuth.")
-        show_cmd("biscli billing refill")
-        subprocess.run([args.cli, "billing", "refill"])
+        if creds == 0:
+            print("You'll need to purchase credits to use Bismuth.")
+            show_cmd("biscli billing refill")
+            subprocess.run([args.cli, "billing", "refill"])
 
     use_sample = input(
         "💭 Would you like to first go through a guided tour with a sample project (this will use about 50 credits of your initial 100 credits)? [Y/n]"
@@ -160,8 +187,9 @@ def quickstart(args):
                 return
 
         print("Cloning sample project...")
-        if os.path.exists("quickstart-sample"):
-            shutil.rmtree("quickstart-sample")
+        repo = "quickstart-sample"
+        if os.path.exists(repo):
+            shutil.rmtree(repo)
         subprocess.run(
             [
                 "git",
@@ -172,12 +200,13 @@ def quickstart(args):
         )
         print("")
 
-        repo = "quickstart-sample"
+        fullpath = str(pathlib.Path(repo).resolve())
+
         print(
             "👉 In another terminal, let's run the project to see what we're working with."
         )
         print(
-            f"Run {colored(f'cd {repo} && npm i && npm run dev', 'light_blue')} and go to the URL."
+            f"Run {colored(f'cd {fullpath} && npm i && npm run dev', 'light_blue')} and go to the URL."
         )
         input("Press [Enter] to continue.")
 
@@ -185,14 +214,16 @@ def quickstart(args):
         print(
             "💡 Fun fact: Bismuth actually created this project from scratch in a single message!"
         )
-        print()
-
-        print("👉 Now, let's import the repository to Bismuth.")
-        print(f"Run {colored(f'biscli import {repo} --upload', 'light_blue')}")
-        input("Press [Enter] to continue.")
         print("")
 
-        fullpath = str(pathlib.Path(repo).resolve())
+        print("👉 Now, let's import the repository to Bismuth.")
+        print(
+            "Run",
+            colored(f"biscli import '{fullpath}' --upload", "light_blue"),
+            "in another terminal.",
+        )
+        input("Press [Enter] to continue.")
+        print("")
 
         print("👉 Let's start chatting with Bismuth.")
         print("In another terminal, open the chat interface:")
@@ -207,11 +238,14 @@ def quickstart(args):
         print(
             "Bismuth will now plan out how to complete the task, collect relevant information from the repository, and finally begin working."
         )
+        print(
+            "And Bismuth works all on its own so you can go grab a cup of coffee while this finishes! ☕️"
+        )
         input("Press [Enter] once Bismuth is showing you a diff.")
         print("")
 
         print(
-            f"👉 Bismuth is now showing you the diff of the code it wrote. Press {colored('y', 'yellow')} to accept the changes."
+            f"👉 Bismuth is now showing you the diff of the code it wrote. Press {colored('y', 'yellow')} in the chat terminal to accept the changes."
         )
         print(
             "Now, let's check Bismuth's work. Go back to the running app, refresh the page, and test the new date selection feature."
@@ -325,6 +359,11 @@ if __name__ == "__main__":
         type=pathlib.Path,
         help="Path to installed Bismuth CLI",
         default="biscli",
+    )
+    parser_quickstart.add_argument(
+        "--no-login",
+        help="Skip the login step",
+        action="store_true",
     )
     parser_quickstart.set_defaults(func=quickstart)
 

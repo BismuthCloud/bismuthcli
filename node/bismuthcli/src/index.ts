@@ -67,51 +67,82 @@ async function installCli(argv: any) {
   fs.mkdirSync(installDir, { recursive: true });
   fs.writeFileSync(binPath, response.data, { mode: 0o755 });
 
+  console.log(chalk.green(`✅ Installed Bismuth CLI to ${binPath}`));
+
   const not_in_path = !(process.env.PATH || "")
     .split(":")
     .map((p) => path.resolve(p))
     .includes(path.resolve(installDir));
 
   if (not_in_path) {
-    console.log(
-      chalk.yellow(
-        `⚠️ ${installDir} is not in your $PATH - you'll need to add it to your shell rc`
-      )
-    );
+    let rcfile = null;
+    const shell = process.env.SHELL || '';
+    
+    if (shell.includes('zsh')) {
+      if (fs.existsSync(path.join(os.homedir(), ".zshrc"))) {
+        rcfile = path.join(os.homedir(), ".zshrc");
+      } else if (fs.existsSync(path.join(os.homedir(), ".zprofile"))) {
+        rcfile = path.join(os.homedir(), ".zprofile");
+      }
+    } else if (shell.includes('bash')) {
+      if (fs.existsSync(path.join(os.homedir(), ".bashrc"))) {
+        rcfile = path.join(os.homedir(), ".bashrc");
+      } else if (fs.existsSync(path.join(os.homedir(), ".bash_profile"))) {
+        rcfile = path.join(os.homedir(), ".bash_profile");
+      }
+    }
+
+    if (rcfile) {
+      fs.appendFileSync(rcfile, `\nexport PATH="${installDir}:$PATH"\n`);
+      process.env.PATH = `${installDir}:${process.env.PATH}`;
+      console.log(
+        chalk.green(
+          `✅ Updated $PATH in ${rcfile}`
+        )
+      );
+      console.log("👉 You'll need to close and reopen any existing terminals to use 'biscli' in them.")
+    } else {
+      console.log(
+        chalk.yellow(
+          `⚠️  ${installDir} is not in your $PATH - you'll need to add it to your shell rc`
+        )
+      );
+    }
   }
 
-  console.log(chalk.green(`✅ Installed Bismuth CLI to ${binPath}`));
-
   if (argv.quickstart) {
-    await quickstart(not_in_path ? binPath : undefined);
+    await quickstart({
+      cli: not_in_path ? binPath : undefined,
+      login: true,
+    });
   }
 }
 
-async function quickstart(cliPath?: string) {
-  console.log("First, let's log you in to the Bismuth platform.");
+async function quickstart(argv: any) {
+  const cliPath = argv.cli ? argv.cli : "biscli";
 
-  const loginCmd = cliPath ? `${cliPath} login` : "biscli login";
-  console.log(`Running: ${chalk.cyan(loginCmd)}`);
+  if (argv.login) {
+    console.log("First, let's log you in to the Bismuth platform.");
 
-  child_process.execSync(loginCmd, { stdio: "inherit" });
-  console.log("");
+    const loginCmd = `${cliPath} login`;
+    console.log(`Running: ${chalk.cyan(loginCmd)}`);
 
-  let creds = 0;
-  try {
-    const creditsCmd = cliPath
-      ? `${cliPath} billing credits-remaining`
-      : "biscli billing credits-remaining";
-    creds = parseInt(child_process.execSync(creditsCmd).toString().trim());
-  } catch (error) {}
+    child_process.execSync(loginCmd, { stdio: "inherit" });
+    console.log("");
 
-  if (creds === 0) {
-    console.log("You'll need to purchase credits to use Bismuth.");
-    const refillCmd = cliPath
-      ? `${cliPath} billing refill`
-      : "biscli billing refill";
-    await pressEnterToContinue("Press Enter to open the purchase page.");
-    console.log(`Running: ${chalk.cyan(refillCmd)}`);
-    child_process.execSync(refillCmd, { stdio: "inherit" });
+    let creds = 0;
+    try {
+      const creditsCmd = `${cliPath} billing credits-remaining`;
+      creds = parseInt(child_process.execSync(creditsCmd).toString().trim());
+    } catch (error) {}
+
+    if (creds === 0) {
+      console.log("You'll need to purchase credits to use Bismuth.");
+      const refillCmd = `${cliPath} billing refill`;
+      await pressEnterToContinue("Press Enter to open the purchase page.");
+      console.log(`Running: ${chalk.cyan(refillCmd)}`);
+      child_process.execSync(refillCmd, { stdio: "inherit" });
+    }
   }
 
   const { useSampleProject } = await inquirer.prompt([
@@ -143,12 +174,14 @@ async function quickstart(cliPath?: string) {
     );
     console.log("");
 
+    repoPath = path.resolve(sampleRepoPath);
+
     console.log(
       "👉 In another terminal, let's run the project to see what we're working with."
     );
     console.log(
       `Run ${chalk.cyan(
-        `cd ${sampleRepoPath} && npm -i && npm run dev`
+        `cd ${repoPath} && npm i && npm run dev`
       )} and go to the URL`
     );
     await pressEnterToContinue();
@@ -162,20 +195,14 @@ async function quickstart(cliPath?: string) {
     console.log("");
 
     console.log("👉 Now, let's import the repository to Bismuth.");
-    const importCmd = cliPath
-      ? `${cliPath} import ${sampleRepoPath} --upload`
-      : `biscli import ${sampleRepoPath} --upload`;
-    console.log(`Run ${chalk.cyan(importCmd)}`);
+    const importCmd = `${cliPath} import '${repoPath}' --upload`;
+    console.log(`Run ${chalk.cyan(importCmd)} in another terminal.`);
     await pressEnterToContinue();
     console.log("");
 
-    repoPath = path.resolve(sampleRepoPath);
-
     console.log("👉 Now let's start chatting with Bismuth.");
     console.log("In another terminal, open the chat interface:");
-    const chatCmd = cliPath
-      ? `${cliPath} chat --repo '${repoPath}'`
-      : `biscli chat --repo '${repoPath}'`;
+    const chatCmd = `${cliPath} chat --repo '${repoPath}'`;
     console.log(chalk.cyan(chatCmd));
     await pressEnterToContinue();
 
@@ -190,6 +217,9 @@ async function quickstart(cliPath?: string) {
     console.log(
       "Bismuth will now plan out how to complete the task, collect relevant information from the repository, and finally begin working."
     );
+    console.log(
+      "And Bismuth works all on its own so you can go grab a cup of coffee while this finishes! ☕️"
+    );
     await pressEnterToContinue(
       "Press Enter once Bismuth is showing you a diff."
     );
@@ -198,7 +228,7 @@ async function quickstart(cliPath?: string) {
     console.log(
       `👉 Bismuth is now showing you the diff of the code it wrote. Press ${chalk.yellow(
         "y"
-      )} to accept the changes.`
+      )} in the chat terminal to accept the changes.`
     );
     console.log(
       `Now, let's check Bismuth's work. Go back to the running app, refresh the page, and test the new date selection feature.`
@@ -233,9 +263,7 @@ async function quickstart(cliPath?: string) {
     console.log("");
 
     console.log("👉 Finally, let's clean up the project.");
-    const deleteCmd = cliPath
-      ? `${cliPath} project delete ${sampleRepoPath}`
-      : `biscli project delete ${sampleRepoPath}`;
+    const deleteCmd = `${cliPath} project delete ${sampleRepoPath}`;
     console.log(
       `Exit the Bismuth chat interface by hitting ${chalk.yellow(
         "Esc"
@@ -273,9 +301,7 @@ async function quickstart(cliPath?: string) {
     repoPath = await selectRepository();
   }
 
-  const importCmd = cliPath
-    ? `${cliPath} import "${repoPath}"`
-    : `biscli import "${repoPath}"`;
+  const importCmd = `${cliPath} import '${repoPath}'`;
   console.log(`Running: ${chalk.cyan(importCmd)}`);
 
   child_process.execSync(importCmd, { stdio: "inherit" });
@@ -292,9 +318,7 @@ async function quickstart(cliPath?: string) {
     )}' to send us feedback or report a bug.`
   );
 
-  const chatCmd = cliPath
-    ? `${cliPath} chat --repo "${repoPath}"`
-    : `biscli chat --repo "${repoPath}"`;
+  const chatCmd = `${cliPath} chat --repo '${repoPath}'`;
   console.log(`Running: ${chalk.cyan(chatCmd)}`);
   await pressEnterToContinue();
 
@@ -360,8 +384,23 @@ yargs(hideBin(process.argv))
     },
     installCli
   )
-  .command("quickstart", "See how to use the Bismuth CLI", {}, () =>
-    quickstart()
+  .command(
+    "quickstart",
+    "See how to use the Bismuth CLI", 
+    (yargs) => {
+      return yargs
+        .option("cli", {
+          type: "string",
+          description: "Path to installed Bismuth CLI",
+          default: "biscli",
+        })
+        .option("login", {
+          type: "boolean",
+          description: "Include the login step",
+          default: true,
+        });
+    },
+    quickstart
   )
   .strict()
   .demandCommand()
