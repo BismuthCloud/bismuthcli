@@ -120,7 +120,7 @@ def install_cli(args):
         )
         return
 
-    quickstart(argparse.Namespace(cli=binpath))
+    quickstart(argparse.Namespace(cli=binpath, no_login=False))
 
 
 def show_cmd(cmd, confirm=True):
