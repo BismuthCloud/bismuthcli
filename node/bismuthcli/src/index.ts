@@ -264,7 +264,7 @@ async function quickstart(argv: any) {
     const deleteCmd = `${cliPath} project delete ${sampleRepoPath}`;
     console.log(
       `Exit the Bismuth chat interface by hitting ${chalk.yellow(
-        "Esc"
+        "Ctrl+C"
       )}, kill the node development server, and run ${chalk.cyan(
         deleteCmd
       )} to delete the project from Bismuth.`

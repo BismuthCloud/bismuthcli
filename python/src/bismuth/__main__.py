@@ -279,7 +279,7 @@ def quickstart(args):
 
         print("👉 Finally, let's clean up the project")
         print(
-            f"Exit the Bismuth chat interface by hitting {colored('Esc', 'yellow')}, kill the node development server, and run {colored(f'biscli project delete {repo}', 'light_blue')} to delete the project from Bismuth."
+            f"Exit the Bismuth chat interface by hitting {colored('Ctrl+C', 'yellow')}, kill the node development server, and run {colored(f'biscli project delete {repo}', 'light_blue')} to delete the project from Bismuth."
         )
         input("Press [Enter] to continue.")
         print("")
