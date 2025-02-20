@@ -225,7 +225,7 @@ def quickstart(args):
         input("Press [Enter] to continue.")
         print("")
 
-        print("👉 Let's start chatting with Bismuth.")
+        print("👉 Let's start working with Bismuth.")
         print("In another terminal, open the chat interface:")
         cprint(f"biscli chat --repo '{fullpath}'", "light_blue")
         input("Press [Enter] to continue.")
@@ -240,6 +240,9 @@ def quickstart(args):
         )
         print(
             "And Bismuth works all on its own so you can go grab a cup of coffee while this finishes! ☕️"
+        )
+        print(
+            "💡 In the default 'Full' mode, Bismuth will always write code when you message it and won't respond to simple conversational chat."
         )
         input("Press [Enter] once Bismuth is showing you a diff.")
         print("")

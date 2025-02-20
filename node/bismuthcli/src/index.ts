@@ -198,7 +198,7 @@ async function quickstart(argv: any) {
     await pressEnterToContinue();
     console.log("");
 
-    console.log("👉 Now let's start chatting with Bismuth.");
+    console.log("👉 Now let's start working with Bismuth.");
     console.log("In another terminal, open the chat interface:");
     const chatCmd = `${cliPath} chat --repo '${repoPath}'`;
     console.log(chalk.cyan(chatCmd));
@@ -217,6 +217,9 @@ async function quickstart(argv: any) {
     );
     console.log(
       "And Bismuth works all on its own so you can go grab a cup of coffee while this finishes! ☕️"
+    );
+    console.log(
+      "💡 In the default 'Full' mode, Bismuth will always write code when you message it and won't respond to simple conversational chat."
     );
     await pressEnterToContinue(
       "Press Enter once Bismuth is showing you a diff."
